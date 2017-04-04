@@ -15,6 +15,10 @@ def main():
             print('invalid patient info:' + d['_id'], len(info))
         if len(d.get('d').get('doctor_advice')) == 0:
             print('invalid doctor advice:' + d['_id'])
+        else:
+            for a in d.get('d').get('doctor_advice'):
+                if len(a) != 18:
+                    print("invalid doctor advice: " + a)
     client.close()
 
     print(datetime.now() - start)
