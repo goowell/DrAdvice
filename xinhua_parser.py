@@ -2,6 +2,7 @@ import re
 from os import listdir, path
 from html.parser import HTMLParser
 from concurrent.futures import ThreadPoolExecutor
+from pymongo import MongoClient
 
 class MyHtmlParser(HTMLParser):
     print = False
@@ -32,8 +33,9 @@ class MyHtmlParser(HTMLParser):
                 self.td_open = True
 
         if tag == 'div' and self.check_style(attrs, "width: 724px; height: 332px; "):
-            self.div_open = True
-        if tag == 'table' and self.check_style(attrs, "width: 1013px; "):
+            # self.div_open = True
+            pass
+        elif tag == 'table' and self.check_style(attrs, "width: 1013px; "):
             self.profile_open = True
 
     def handle_endtag(self, tag):
@@ -69,18 +71,24 @@ def parser_one(file_path):
 
 
 def main():
+    from datetime import datetime
+
+    start = datetime.now()
     print('hello..')
-    all_html = ["C:/data/xxxxxxxxx/data/"+f for f in listdir("C:/data/xxxxxxxxx/data/") if f.endswith('htm')]
-    b, a = parser_one(all_html[0])
-    for aa in a:
-        print(aa)
-    # with ThreadPoolExecutor(max_workers=4) as executor:
-    #     fs = executor.map(parser_one, all_html)
+    dir = "C:/data/xxxxxxxxx/data/"
+    all_html = [f for f in listdir(dir) if f.endswith('htm')and len(f) == 10]
+    client = MongoClient('192.168.2.110')
+    collection = client.xinhuahos.paients
+    for f in all_html:
+        b=[]
+        a, b = parser_one(dir + f)
+        c, d = parser_one(dir + f.replace('.', 'S.'))
+        b.extend(d)
+        collection.save({'_id':f.split('.')[0],'d':{'info':a, 'doctor_advice': b}})
+        print(f)
+    client.close()
 
-    #     for f,a in fs:
-    #         print(f)
-    #         break
-
+    print(datetime.now() - start)
 
 
 if __name__ == '__main__':
