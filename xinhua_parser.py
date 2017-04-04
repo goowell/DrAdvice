@@ -63,7 +63,7 @@ class MyHtmlParser(HTMLParser):
                 return True
         return False
 
-def parser_one(file_path):
+def parse_one(file_path):
     parser = MyHtmlParser()
     with open(file_path, encoding='UTF-8') as f:
         parser.feed(f.read())
@@ -81,8 +81,8 @@ def main():
     collection = client.xinhuahos.paients
     for f in all_html:
         b=[]
-        a, b = parser_one(dir + f)
-        c, d = parser_one(dir + f.replace('.', 'S.'))
+        a, b = parse_one(dir + f)
+        c, d = parse_one(dir + f.replace('.', 'S.'))
         b.extend(d)
         collection.save({'_id':f.split('.')[0],'d':{'info':a, 'doctor_advice': b}})
         print(f)
