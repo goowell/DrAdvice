@@ -35,8 +35,7 @@ class MyHtmlParser(HTMLParser):
                 self.td_open = True
 
         if tag == 'div' and self.check_style(attrs, "width: 724px; height: 332px; "):
-            # self.div_open = True
-            pass
+            self.div_open = True
         elif tag == 'table' and self.check_style(attrs, "width: 1013px; "):
             self.profile_open = True
 
@@ -65,12 +64,17 @@ class MyHtmlParser(HTMLParser):
                 return True
         return False
 
-def parse_one(file_path):
+def parse_one_file(file_path):
     parser = MyHtmlParser()
     parser.init()
     with open(file_path, encoding='UTF-8') as f:
         parser.feed(f.read())
     return parser.profile, parser.doctor_advice
+def parse_one(dir, file_name):
+    a, b = parse_one_file(dir + f)
+    c, d = parse_one_file(dir + f.replace('.', 'S.'))
+    b.extend(d)
+    return {'_id':f.split('.')[0],'d':{'info':a, 'doctor_advice': b}}
 
 
 def main():
@@ -83,11 +87,7 @@ def main():
     client = MongoClient('192.168.2.110')
     collection = client.xinhuahos.paients
     for f in all_html:
-        b=[]
-        a, b = parse_one(dir + f)
-        c, d = parse_one(dir + f.replace('.', 'S.'))
-        b.extend(d)
-        collection.save({'_id':f.split('.')[0],'d':{'info':a, 'doctor_advice': b}})
+        collection.save(parse_one(dir, f))
         print(f)
     client.close()
 
