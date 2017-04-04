@@ -7,14 +7,15 @@ from pymongo import MongoClient
 class MyHtmlParser(HTMLParser):
 
     def init(self):
-        self.print = False
         self.div_count = 0
         self.div_open = False
         self.tr_open = False
         self.td_open = False
         self.profile_open = False
         self.profile_keyword = '详细内容'
+        self.dadvice_keyword = '核对护士'
         self.profile_keyword_open = False
+        self.dadvice_keyword_open = False
         self.single_advie = []
 
         self.doctor_advice = []
@@ -31,7 +32,9 @@ class MyHtmlParser(HTMLParser):
 
         if data == self.profile_keyword:
             self.profile_keyword_open = True
-
+        elif data == self.dadvice_keyword:
+            self.dadvice_keyword_open = True
+            
     def handle_starttag(self, tag, attrs):
         if self.div_open:
             if tag == 'div':
@@ -44,7 +47,7 @@ class MyHtmlParser(HTMLParser):
         elif self.profile_open:
             if tag == 'td':
                 self.td_open = True
-        if tag == 'div' and self.check_style(attrs, "width: 724px; height: 332px; "):
+        if tag == 'div' and self.dadvice_keyword_open and self.check_style(attrs, "x-grid3-scroller"):
             self.div_open = True
         elif tag == 'table' and self.profile_keyword_open:
             self.profile_open = True
@@ -53,7 +56,6 @@ class MyHtmlParser(HTMLParser):
         if self.profile_open and tag == 'table':
             self.profile_open = False
             self.profile_keyword_open = False
-            print(self.profile)
 
         elif  self.div_open:
             is_div = tag == "div"
@@ -76,7 +78,7 @@ class MyHtmlParser(HTMLParser):
                 
     def check_style(self, attrs, style):
         for attr in attrs:
-            if attr[0] == 'style' and attr[1] == style:
+            if attr[0] == 'class' and attr[1] == style:
                 return True
         return False
 
@@ -110,12 +112,12 @@ def main():
     all_html = [f for f in listdir(dir) if f.endswith('htm')and len(f) == 10]
     client = MongoClient('192.168.2.110')
     collection = client.xinhuahos.paients
-    # collection.save(parse_one(dir, 'B30922.htm'))
+    collection.save(parse_one(dir, 'B30827.htm'))
     # collection.save(parse_one(dir, 'B31008.htm'))
 
-    for f in all_html:
-        collection.save(parse_one(dir, f))
-        print(f)
+    # for f in all_html:
+    #     collection.save(parse_one(dir, f))
+    #     print(f)
 
     client.close()
 
