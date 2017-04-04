@@ -70,11 +70,12 @@ def parse_one_file(file_path):
     with open(file_path, encoding='UTF-8') as f:
         parser.feed(f.read())
     return parser.profile, parser.doctor_advice
+
 def parse_one(dir, file_name):
-    a, b = parse_one_file(dir + f)
-    c, d = parse_one_file(dir + f.replace('.', 'S.'))
+    a, b = parse_one_file(dir + file_name)
+    c, d = parse_one_file(dir + file_name.replace('.', 'S.'))
     b.extend(d)
-    return {'_id':f.split('.')[0],'d':{'info':a, 'doctor_advice': b}}
+    return {'_id':file_name.split('.')[0],'d':{'info':a, 'doctor_advice': b}}
 
 
 def main():
