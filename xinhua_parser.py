@@ -61,6 +61,7 @@ class MyHtmlParser(HTMLParser):
                 self.div_count -= 1
             elif is_div:
                 self.div_open = False
+                
             elif tag == 'tr':
                 self.doctor_advice.append(self.single_advie)
                 self.single_advie = []
@@ -83,7 +84,14 @@ def parse_one_file(file_path):
     parser = MyHtmlParser()
     parser.init()
     with open(file_path, encoding='UTF-8') as f:
-        parser.feed(f.read())
+        c = f.read()
+        idx = c.find('归档状态')
+        c = c[idx:]
+        idx = c.find('任务列表')
+        s1 = c[:idx]
+        idx2 = c.rfind('停止医生')
+        s2 = c[idx2:]
+        parser.feed(s1+s2)
     return parser.profile, parser.doctor_advice
 
 def parse_one(dir, file_name):
@@ -108,7 +116,7 @@ def main():
     for f in all_html:
         collection.save(parse_one(dir, f))
         print(f)
-        
+
     client.close()
 
     print(datetime.now() - start)
