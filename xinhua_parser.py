@@ -13,6 +13,8 @@ class MyHtmlParser(HTMLParser):
         self.tr_open = False
         self.td_open = False
         self.profile_open = False
+        self.profile_keyword = '详细内容'
+        self.profile_keyword_open = False
         self.single_advie = []
 
         self.doctor_advice = []
@@ -20,10 +22,17 @@ class MyHtmlParser(HTMLParser):
 
     def handle_data(self, data):
         if self.td_open:
-            self.single_advie.append(data)
-            self.td_open = False
+            if self.profile_open:
+                self.profile.append(data)
+                self.td_open = False
+            elif self.div_open:
+                self.single_advie.append(data)
+                self.td_open = False
+
         elif self.profile_open:
             self.profile.append(data)
+        if data == self.profile_keyword:
+            self.profile_keyword_open = True
 
     def handle_starttag(self, tag, attrs):
         if self.div_open:
@@ -34,14 +43,18 @@ class MyHtmlParser(HTMLParser):
             elif tag == 'td':
                 self.td_open = True
 
+        elif self.profile_open:
+            if tag == 'td':
+                self.td_open = True
         if tag == 'div' and self.check_style(attrs, "width: 724px; height: 332px; "):
             self.div_open = True
-        elif tag == 'table' and self.check_style(attrs, "width: 1013px; "):
+        elif tag == 'table' and (self.profile_keyword_open or self.check_style(attrs, "width: 1013px; ")):
             self.profile_open = True
 
     def handle_endtag(self, tag):
         if self.profile_open and tag == 'table':
             self.profile_open = False
+            self.profile_keyword_open = False
 
         elif  self.div_open:
             is_div = tag == "div"
@@ -57,7 +70,10 @@ class MyHtmlParser(HTMLParser):
                 if self.td_open:
                     self.single_advie.append('')
                     self.td_open = False
-
+            elif tag == 'td' and self.profile_open and self.td_open:
+                self.profile.append('')
+                self.td_open = False
+                
     def check_style(self, attrs, style):
         for attr in attrs:
             if attr[0] == 'style' and attr[1] == style:
@@ -87,6 +103,9 @@ def main():
     all_html = [f for f in listdir(dir) if f.endswith('htm')and len(f) == 10]
     client = MongoClient('192.168.2.110')
     collection = client.xinhuahos.paients
+    # collection.save(parse_one(dir, 'B17493.htm'))
+    # collection.save(parse_one(dir, 'B09560.htm'))
+
     for f in all_html:
         collection.save(parse_one(dir, f))
         print(f)
