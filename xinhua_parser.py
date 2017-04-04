@@ -5,16 +5,18 @@ from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
 
 class MyHtmlParser(HTMLParser):
-    print = False
-    div_count = 0
-    div_open = False
-    tr_open = False
-    td_open = False
-    profile_open = False
-    single_advie = []
 
-    doctor_advice = []
-    profile = []
+    def init(self):
+        self.print = False
+        self.div_count = 0
+        self.div_open = False
+        self.tr_open = False
+        self.td_open = False
+        self.profile_open = False
+        self.single_advie = []
+
+        self.doctor_advice = []
+        self.profile = []
 
     def handle_data(self, data):
         if self.td_open:
@@ -65,6 +67,7 @@ class MyHtmlParser(HTMLParser):
 
 def parse_one(file_path):
     parser = MyHtmlParser()
+    parser.init()
     with open(file_path, encoding='UTF-8') as f:
         parser.feed(f.read())
     return parser.profile, parser.doctor_advice
