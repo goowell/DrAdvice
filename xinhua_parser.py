@@ -29,8 +29,6 @@ class MyHtmlParser(HTMLParser):
                 self.single_advie.append(data)
                 self.td_open = False
 
-        elif self.profile_open:
-            self.profile.append(data)
         if data == self.profile_keyword:
             self.profile_keyword_open = True
 
@@ -48,13 +46,14 @@ class MyHtmlParser(HTMLParser):
                 self.td_open = True
         if tag == 'div' and self.check_style(attrs, "width: 724px; height: 332px; "):
             self.div_open = True
-        elif tag == 'table' and (self.profile_keyword_open or self.check_style(attrs, "width: 1013px; ")):
+        elif tag == 'table' and self.profile_keyword_open:
             self.profile_open = True
 
     def handle_endtag(self, tag):
         if self.profile_open and tag == 'table':
             self.profile_open = False
             self.profile_keyword_open = False
+            print(self.profile)
 
         elif  self.div_open:
             is_div = tag == "div"
@@ -70,9 +69,9 @@ class MyHtmlParser(HTMLParser):
                 if self.td_open:
                     self.single_advie.append('')
                     self.td_open = False
-            elif tag == 'td' and self.profile_open and self.td_open:
-                self.profile.append('')
-                self.td_open = False
+        elif tag == 'td' and self.profile_open and self.td_open:
+            self.profile.append('')
+            self.td_open = False
                 
     def check_style(self, attrs, style):
         for attr in attrs:
@@ -103,12 +102,13 @@ def main():
     all_html = [f for f in listdir(dir) if f.endswith('htm')and len(f) == 10]
     client = MongoClient('192.168.2.110')
     collection = client.xinhuahos.paients
-    # collection.save(parse_one(dir, 'B17493.htm'))
-    # collection.save(parse_one(dir, 'B09560.htm'))
+    # collection.save(parse_one(dir, 'B30922.htm'))
+    # collection.save(parse_one(dir, 'B31008.htm'))
 
     for f in all_html:
         collection.save(parse_one(dir, f))
         print(f)
+        
     client.close()
 
     print(datetime.now() - start)
