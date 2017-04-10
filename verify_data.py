@@ -19,21 +19,28 @@ def get_info(collection):
     count = 0
     count_gluclose = 0
     count_gluclose1 = 0
+    is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree, is_neocate, is_peptide, is_pretermInfants, is_yingnai]
 
+    def is_nutrition(data):
+        for j in is_nutritions:
+            if j(a):
+                return True
+        return False
     for d in collection.find():
         if len(d.get('d').get('doctor_advice')) == 0:
             print('invalid doctor advice:' + d['_id'])
         else:
             for a in d.get('d').get('doctor_advice'):
-                if  'q' in a[5]:
+                la5 = a[5].lower()
+                if  'ml' in la5 and 'q' in la5:
                     count += 1
-                    if  is_alfare(a) or is_breastFeeding(a) or is_gluclose(a) or is_lactoseFree(a) or is_neocate(a) or is_pretermInfants(a) or is_yingnai(a):
+                    if  is_nutrition(a):
                         count_gluclose += 1 
                         # print(a[5])
                     else:
-                        if expression:
-                            pass
-                            print(a[5])
+                        # if '其他' == a[4]:
+                            
+                        print(a[5])
                         pass
     print(count)
     print(count_gluclose)

@@ -8,7 +8,7 @@ def is_lactoseFree(data):
 
 def is_alfare(data):
     '蔼尔舒'
-    return '蔼' in data[5]
+    return '舒' in data[5]
 
 def is_breastFeeding(data):
     '母乳'
@@ -21,6 +21,14 @@ def is_yingnai(data):
 def is_pretermInfants(data):
     '早奶'
     return '早' in data[5]
+
+def is_formula(data):
+    '配方奶'
+    return '配方' in data[5]
+
+def is_peptide(data):
+    '小百肽'
+    return '小百肽' in data[5]
 
 def is_gluclose(data):
     '葡萄糖'
