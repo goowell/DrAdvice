@@ -1,6 +1,12 @@
 from pymongo import MongoClient
 from judge import *
 
+test_case = [
+    '5%葡萄糖针 50ml 口服',
+    '10%葡萄糖针 50ml 静滴 st',
+    '5%葡萄糖针 42 ml 鼻饲',
+]
+
 def verify_data(collection):
     'verify the data format is correct or not.'
     for d in collection.find():
@@ -20,10 +26,10 @@ def get_info(collection):
     count_gluclose = 0
     count_gluclose1 = 0
     is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree, is_neocate, is_peptide, is_pretermInfants, is_yingnai]
-
+    _get = get()
     def is_nutrition(data):
         for j in is_nutritions:
-            if j(a):
+            if j(data):
                 return True
         return False
     for d in collection.find():
@@ -32,15 +38,17 @@ def get_info(collection):
         else:
             for a in d.get('d').get('doctor_advice'):
                 la5 = a[5].lower()
-                if  'ml' in la5 and 'q' in la5:
+                if  '静滴' not in la5 and '''/h''' not in la5 and ('ml' in la5 or 'q' in la5):
                     count += 1
                     if  is_nutrition(a):
                         count_gluclose += 1 
-                        # print(a[5])
+                        if 'q' in la5:
+                            print(la5)
+                            print(_get.times(la5))
                     else:
                         # if '其他' == a[4]:
                             
-                        print(a[5])
+                        # print(a[5])
                         pass
     print(count)
     print(count_gluclose)
@@ -55,7 +63,7 @@ def main():
     start = datetime.now()
     print('hello..')
 
-    client = MongoClient('192.168.4.12')
+    client = MongoClient('172.22.25.48')
     collection = client.xinhuahos.paients
     # verify_data(collection)
     get_info(collection)
