@@ -38,13 +38,15 @@ def get_info(collection):
         else:
             for a in d.get('d').get('doctor_advice'):
                 la5 = a[5].lower()
-                if  '静滴' not in la5 and '''/h''' not in la5 and ('ml' in la5 or 'q' in la5):
+                if  '''/h''' not in la5 and ('ml' in la5 or 'q' in la5) and is_executed(a):
                     count += 1
                     if  is_nutrition(a):
-                        count_gluclose += 1 
-                        if 'q' in la5:
-                            print(la5)
-                            print(_get.times(la5))
+                        count_gluclose += 1
+                        # print(la5)
+                        # print([_get.start(a),_get.type(a),_get.quantity(a)*_get.times(a), _get.stop(a)]) 
+                        # if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0 and is_en(a):
+                        if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0:
+                            print(a)
                     else:
                         # if '其他' == a[4]:
                             
