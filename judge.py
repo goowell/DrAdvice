@@ -33,7 +33,11 @@ def is_peptide(data):
 def is_gluclose(data):
     '葡萄糖'
     d = data[5]
-    return '抽胃液' not in d and ('葡' in d or 'gs' in d.lower())
+    return ('葡' in d or 'gs' in d.lower()) and '抽胃液' not in d
+
+def is_weight(data):
+    '体重'
+    return '体重' in data[5]
 
 def is_executed(data):
     '已执行'
