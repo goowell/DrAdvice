@@ -49,6 +49,15 @@ class get(object):
     quantity_p = re.compile(r'(?P<q>\d+)\s*((ml)|(毫升)).*', flags=re.I)
     times_p = re.compile(r'(q|(维持))(?P<q>\d+)h', flags=re.I)
     times_p2 = re.compile(r'\*(?P<q>\d+)', flags=re.I)
+    weight_p = re.compile(r'(?P<q>\d+\.?\d*)((g)|(kg)).*')
+
+    def weight(self, src):
+        str_src = src[5].lower()
+        res = self.weight_p.search(str_src)
+        if res:
+            return float(res.groupdict()['q']) if 'kg' in str_src else float(res.groupdict()['q'])/1000
+        return 0
+        
     def quantity(self, src):
         str_src = src[5]
         res = self.quantity_p.search(str_src)

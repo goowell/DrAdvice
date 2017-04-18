@@ -38,20 +38,23 @@ def get_info(collection):
         else:
             for a in d.get('d').get('doctor_advice'):
                 la5 = a[5].lower()
-                if  '''/h''' not in la5 and ('ml' in la5 or 'q' in la5) and is_executed(a):
-                    count += 1
-                    if  is_nutrition(a):
-                        count_gluclose += 1
-                        # print(la5)
-                        # print([_get.start(a),_get.type(a),_get.quantity(a)*_get.times(a), _get.stop(a)]) 
-                        # if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0 and is_en(a):
-                        if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0:
-                            print(a)
-                    else:
-                        # if '其他' == a[4]:
+                if 'weight' in la5 or '体重' in la5:
+                    print(a[5])
+                    print(_get.weight(a))
+                # if  '''/h''' not in la5 and ('ml' in la5 or 'q' in la5) and is_executed(a):
+                #     count += 1
+                #     if  is_nutrition(a):
+                #         count_gluclose += 1
+                #         # print(la5)
+                #         # print([_get.start(a),_get.type(a),_get.quantity(a)*_get.times(a), _get.stop(a)]) 
+                #         # if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0 and is_en(a):
+                #         if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0:
+                #             print(a)
+                #     else:
+                #         # if '其他' == a[4]:
                             
-                        # print(a[5])
-                        pass
+                #         # print(a[5])
+                #         pass
     print(count)
     print(count_gluclose)
     print(count_gluclose1)
@@ -65,7 +68,7 @@ def main():
     start = datetime.now()
     print('hello..')
 
-    client = MongoClient('172.22.25.48')
+    client = MongoClient('192.168.4.12')
     collection = client.xinhuahos.paients
     # verify_data(collection)
     get_info(collection)
