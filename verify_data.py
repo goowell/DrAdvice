@@ -30,34 +30,19 @@ def get_info(collection):
     def is_nutrition(data):
         for j in is_nutritions:
             if j(data):
-                return True
+                return j(data)
         return False
     for d in collection.find():
         if len(d.get('d').get('doctor_advice')) == 0:
             print('invalid doctor advice:' + d['_id'])
         else:
             for a in d.get('d').get('doctor_advice'):
-                la5 = a[5].lower()
-                if 'weight' in la5 or '体重' in la5:
-                    print(a[5])
-                    print(_get.weight(a))
-                # if  '''/h''' not in la5 and ('ml' in la5 or 'q' in la5) and is_executed(a):
-                #     count += 1
-                #     if  is_nutrition(a):
-                #         count_gluclose += 1
-                #         # print(la5)
-                #         # print([_get.start(a),_get.type(a),_get.quantity(a)*_get.times(a), _get.stop(a)]) 
-                #         # if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0 and is_en(a):
-                #         if '葡萄糖' == _get.type(a) and _get.quantity(a)*_get.times(a) == 0:
-                #             print(a)
-                #     else:
-                #         # if '其他' == a[4]:
-                            
-                #         # print(a[5])
-                #         pass
-    print(count)
-    print(count_gluclose)
-    print(count_gluclose1)
+                d = _get.dict(a)
+                if d:
+                    print(d)
+    # print(count)
+    # print(count_gluclose)
+    # print(count_gluclose1)
 
 
 
