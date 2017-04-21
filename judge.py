@@ -141,6 +141,16 @@ class get(object):
             'total': self.quantity(src) * self.times(src)
         }
     def dict(self, src):
+        '''
+        return 
+            None
+        or
+            {'st': '2014-10-31 19:37', 'w': 7.0}
+        or 
+            {'total': 60.0, 'et': '2014-11-07 12:45', 'st': '2014-11-05 14:06', 'en': False, 't': '葡萄糖'}
+        or
+            {'total': 60.0, 'et': '', 'st': '2014-11-05 14:06', 'en': False, 't': '葡萄糖'}
+        '''
         if is_weight(src):
             return self.dict_wet(src)
         la5 = src[5].lower()

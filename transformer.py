@@ -1,7 +1,25 @@
 from datetime import datetime, timedelta
+from judge import get
+_get = get()
+
+def split_all_ad(one_child):
+    one_p = []
+    for a in one_child.get('d').get('doctor_advice'):
+        da = _get.dict(a)
+        if da and da.get('t'):
+            print(da)
+            one_p.extend(split_ad(da))
+    return one_p
 
 
 def split_ad(dict_ad):
+    '''
+    input: {'total': 60.0, 'et': '2014-11-07 12:45', 'st': '2014-11-05 14:06', 'en': False, 't': '葡萄糖'}
+    output: [
+        {'v': 60.0, 'en': False, 'd': '2014-11-05', 't': '葡萄糖'}, 
+        {'v': 60.0, 'en': False, 'd': '2014-11-06', 't': '葡萄糖'}
+        ]
+    '''
     ads = []
     st = str2date(dict_ad['st'])
     if dict_ad['et']:
@@ -23,6 +41,12 @@ def split_ad(dict_ad):
             'v': dict_ad['total']
         })
     return ads
+
+def dict_collect(list_d):
+    res = []
+    for d in list_d:
+        res.extend(d)
+    return res
 
 
 def str2date(str_d):

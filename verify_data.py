@@ -1,11 +1,6 @@
 from pymongo import MongoClient
-from judge import *
+from transformer import *
 
-test_case = [
-    '5%葡萄糖针 50ml 口服',
-    '10%葡萄糖针 50ml 静滴 st',
-    '5%葡萄糖针 42 ml 鼻饲',
-]
 
 def verify_data(collection):
     'verify the data format is correct or not.'
@@ -22,28 +17,14 @@ def verify_data(collection):
                 
 def get_info(collection):
     'count PE'
-    count = 0
-    count_gluclose = 0
-    count_gluclose1 = 0
-    is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree, is_neocate, is_peptide, is_pretermInfants, is_yingnai]
-    _get = get()
-    def is_nutrition(data):
-        for j in is_nutritions:
-            if j(data):
-                return j(data)
-        return False
+
     for d in collection.find():
         if len(d.get('d').get('doctor_advice')) == 0:
             print('invalid doctor advice:' + d['_id'])
         else:
-            for a in d.get('d').get('doctor_advice'):
-                d = _get.dict(a)
-                if d:
-                    print(d)
-    # print(count)
-    # print(count_gluclose)
-    # print(count_gluclose1)
-
+            one_p = split_all_ad(d)
+            print(one_p)
+        break
 
 
 def main():
