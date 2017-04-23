@@ -3,7 +3,10 @@ from os import listdir, path
 from html.parser import HTMLParser
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
+from datetime import datetime
+from logger import logger
 
+replace_p = re.compile(r'<\w+( [^>]+)>')
 
 class MyHtmlParser(HTMLParser):
 
@@ -96,34 +99,39 @@ def parse_one_file(file_path):
         idx2 = c.rfind('停止医生')
         s2 = c[idx2:]
         parser.feed(s1 + s2)
+
+        # parser.feed(c)
     return parser.profile, parser.doctor_advice
 
 
-def parse_one(dir, file_name):
-    a, b = parse_one_file(dir + file_name)
-    c, d = parse_one_file(dir + file_name.replace('.', 'S.'))
+def parse_one(file_path):
+    a, b = parse_one_file(file_path)
+    if a == [] or b == []:
+        logger.error('invalid file: %s', file_path)
+    c, d = parse_one_file(file_path.replace('.htm', 'S.htm'))
+    if c == [] or d == []:
+        logger.error('invalid file: %s S', file_path)
     b.extend(d)
-    return {'_id': file_name.split('.')[0], 'd': {'info': a, 'doctor_advice': b}}
+    id = path.basename(file_path).split('.')[0]
+    return {'_id': id, 'd': {'info': a, 'doctor_advice': b}}
 
+def collect_files(dir_root):
+    dir_list = listdir(dir_root)
+    files = [path.join(dir_root, f) for f in dir_list if f.endswith('htm')and len(f) == 10]
+    for d in dir_list:
+        if '_files' not in d:
+            sub_dir = path.join(dir_root, d)
+            if path.isdir(sub_dir):
+                files.extend(collect_files(sub_dir))
+    return files
 
-def main():
-    from datetime import datetime
-
-    start = datetime.now()
-    print('hello..')
-    dir = "C:/data/xxxxxxxxx/data/"
-    all_html = [f for f in listdir(dir) if f.endswith('htm')and len(f) == 10]
-    client = MongoClient('192.168.2.110')
+def refresh_db(dir_root):
+    client = MongoClient('192.168.4.12')
     collection = client.xinhuahos.paients
-    # collection.save(parse_one(dir, 'B30827.htm'))
-    # collection.save(parse_one(dir, 'B31008.htm'))
-
+    all_html = collect_files(dir_root)
     def _save(f): 
-        print(f)
-        return collection.save(parse_one(dir, f))
-    # for f in all_html:
-    #     collection.save(parse_one(dir, f))
-    #     print(f)
+        logger.debug(f)
+        return collection.save(parse_one(f))
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         fs = executor.map(_save, all_html)
@@ -131,7 +139,33 @@ def main():
 
     client.close()
 
-    print(datetime.now() - start)
+def test_parse_file():
+    files = [
+        'C:\\data\\xxxxxxxxx\\基本信息-原始\\raw_data\\data2016\\201606\\C81461.htm', 'C:\\data\\xxxxxxxxx\\基本信息-原始\\raw_data\\data2016\\201606\\C81493.htm', 'C:\\data\\xxxxxxxxx\\基本信息-原始\\raw_data\\data2016\\201606\\C82016.htm', 'C:\\data\\xxxxxxxxx\\基本信息-原始\\raw_data\\data2016\\201606\\C82372.htm'
+    ]
+    for f in files:
+        print(f)
+        parse_one(f)
+        break 
+
+def remove_style(strs):
+    # aa = replace_p.findall(strs)
+    
+    # for n in aa:
+    #     if 'x-grid3-scroller' not in n:
+    #         strs = strs.replace(n, '')
+    return strs
+
+def main():
+    test_str = r'<div style="position: absolute; left: 200px; top: 0px; width: 5px; height: 410px; " id="x-auto-163773" class="x-vsplitbar x-component x-unselectable" unselectable="on"></div></div>aaaaa</div></div></div></div><div role="presentation" class="x-window-bl"><div role="presentation" class="x-window-br"><div role="presentation" class="x-window-bc"><div role="presentation" class="x-window-footer"><div class=" x-panel-btns"><div class=" x-small-editor x-panel-fbar x-component x-toolbar-layout-ct" id="x-auto-163757" style="width: 916px; "><table cellspacing="0" class="x-toolbar-ct" role="presentation"><tbody>'
+
+    start = datetime.now()
+    logger.info('hello..' + start.strftime('%H:%M:%S'))
+    dir_root = r"C:\data\xxxxxxxxx\基本信息-原始\raw_data"
+    refresh_db(dir_root)
+    # test_parse_file()
+    # remove_style(test_str)
+    logger.info(datetime.now() - start)
 
 
 if __name__ == '__main__':
