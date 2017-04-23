@@ -9,7 +9,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
-ch2 = logging.FileHandler('xinhua_paser.log')
+ch2 = logging.FileHandler('xinhua_paser.log',encoding='utf-8')
 ch2.setLevel(logging.INFO)
 
 # create formatter
@@ -21,4 +21,4 @@ ch2.setFormatter(formatter)
 
 # add ch to logger
 logger.addHandler(ch)
-# logger.addHandler(ch2)
+logger.addHandler(ch2)

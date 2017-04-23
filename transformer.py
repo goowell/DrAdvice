@@ -3,13 +3,16 @@ from judge import get
 _get = get()
 
 def split_all_ad(one_child):
-    one_p = []
+    one_p_nutrition = []
+    one_p_weight = []
     for a in one_child.get('d').get('doctor_advice'):
         da = _get.dict(a)
         if da and da.get('t'):
             print(da)
-            one_p.extend(split_ad(da))
-    return one_p
+            one_p_nutrition.extend(split_ad(da))
+        else:
+            one_p_weight.append(da)
+    return {'nu':one_p_nutrition, 'wt': one_p_weight}
 
 
 def split_ad(dict_ad):
