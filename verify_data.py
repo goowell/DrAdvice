@@ -1,4 +1,3 @@
-from pymongo import MongoClient
 from transformer import *
 
 
@@ -36,8 +35,8 @@ def main():
 
     client = MongoClient('192.168.4.12')
     collection = client.xinhuahos.paients
-    # verify_data(collection)
-    get_info(collection)
+    verify_data(collection)
+    # get_info(collection)
 
     client.close()
 

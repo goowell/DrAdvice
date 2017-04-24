@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from judge import get
+from db import paients_source, paients_splited, paients_merged
 _get = get()
 
 def split_all_ad(one_child):
@@ -8,9 +9,8 @@ def split_all_ad(one_child):
     for a in one_child.get('d').get('doctor_advice'):
         da = _get.dict(a)
         if da and da.get('t'):
-            print(da)
             one_p_nutrition.extend(split_ad(da))
-        else:
+        elif da and da.get('w'):
             one_p_weight.append(da)
     return {'nu':one_p_nutrition, 'wt': one_p_weight}
 
@@ -31,6 +31,7 @@ def split_ad(dict_ad):
             ads.append({
                 'd': date2str(st),
                 't': dict_ad['t'],
+                'wt': dict_ad['wt'],
                 'en': dict_ad['en'],
                 'v': dict_ad['total']
             })
@@ -40,6 +41,7 @@ def split_ad(dict_ad):
         ads.append({
             'd': date2str(st),
             'en': dict_ad['en'],
+            'wt': dict_ad['wt'],
             't': dict_ad['t'],
             'v': dict_ad['total']
         })
@@ -64,10 +66,23 @@ def main():
         {'total': 100.0, 'et': '', 'st': '2015-05-07 08:52', 'en': False, 't': '葡萄糖'},
         {'total': 100.0, 'et': '2015-05-13 15:27', 'st': '2015-05-11 08:59', 'en': False, 't': '葡萄糖'}
     ]
-    for t in test_case:
-        print(split_ad(t))
+    # for t in test_case:
+    #     print(split_ad(t))
     # print()
+    split()
 
+def split():
+    for p in paients_source.find():
+        splited = {
+            '_id': p['_id'],
+            'info': p['d']['info']
+            }
+        splited.update(split_all_ad(p))
+        paients_splited.save(splited)
+
+def merge():
+    for p in paients_merge.find():
+        pass
 
 if __name__ == '__main__':
     main()

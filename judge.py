@@ -60,6 +60,7 @@ import re
 
 class get(object):
     quantity_p = re.compile(r'(?P<q>\d+)\s*((ml)|(毫升)).*', flags=re.I)
+    percent_p = re.compile(r'(?P<q>\d+)\s*%.*', flags=re.I)
     times_p = re.compile(r'(q|(维持))(?P<q>\d+)h', flags=re.I)
     times_p2 = re.compile(r'\*(?P<q>\d+)', flags=re.I)
     weight_p = re.compile(r'(?P<q>\d+\.?\d*)((g)|(kg)).*')
@@ -78,7 +79,12 @@ class get(object):
         if res:
             return int(res.groupdict()['q'])
         return 0
-        # return self.quantity_p.search(str_src)
+    def percent(self, src):
+        str_src = src[5]
+        res = self.percent_p.search(str_src)
+        if res:
+            return int(res.groupdict()['q'])/100
+        return 0
     def times(self, src):
         str_src = src[5].lower()
         if 'qd' in str_src:
@@ -133,11 +139,14 @@ class get(object):
         }
 
     def dict_ad(self, src):
+        
+        t = self.type(src)
         return {
             'st': self.start(src),
             'et': self.stop(src),
-            't': self.type(src),
-            'en': self.type(src) != '葡萄糖' or is_en(src),
+            't': t,
+            'wt': self.percent(src) if t == '葡萄糖' else 1,
+            'en': t != '葡萄糖' or is_en(src),
             'total': self.quantity(src) * self.times(src)
         }
     def dict(self, src):
