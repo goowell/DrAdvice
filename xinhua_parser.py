@@ -177,7 +177,7 @@ def main():
     test_str = r'<div style="position: absolute; left: 200px; top: 0px; width: 5px; height: 410px; " id="x-auto-163773" class="x-vsplitbar x-component x-unselectable" unselectable="on"></div></div>aaaaa</div></div></div></div><div role="presentation" class="x-window-bl"><div role="presentation" class="x-window-br"><div role="presentation" class="x-window-bc"><div role="presentation" class="x-window-footer"><div class=" x-panel-btns"><div class=" x-small-editor x-panel-fbar x-component x-toolbar-layout-ct" id="x-auto-163757" style="width: 916px; "><table cellspacing="0" class="x-toolbar-ct" role="presentation"><tbody>'
 
     start = datetime.now()
-    logger.info('hello..'
+    logger.info('hello..')
     dir_root = r"C:\data\xxxxxxxxx\基本信息-原始\raw_data"
     # refresh_db(dir_root)
     # test_parse_file()

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from judge import get
+from logger import logger
 from db import paients_source, paients_splited, paients_merged
 _get = get()
 
@@ -9,13 +10,13 @@ def split_all_ad(one_child):
     for a in one_child.get('d').get('doctor_advice'):
         da = _get.dict(a)
         if da and da.get('t'):
-            one_p_nutrition.extend(split_ad(da))
+            one_p_nutrition.extend(_split_ad(da))
         elif da and da.get('w'):
             one_p_weight.append(da)
     return {'nu':one_p_nutrition, 'wt': one_p_weight}
 
 
-def split_ad(dict_ad):
+def _split_ad(dict_ad):
     '''
     input: {'total': 60.0, 'et': '2014-11-07 12:45', 'st': '2014-11-05 14:06', 'en': False, 't': '葡萄糖'}
     output: [
@@ -60,6 +61,7 @@ def date2str(date_d):
     return date_d.strftime('%Y-%m-%d')
 
 def main():
+    logger.info('start')
     test_case = [
         {'total': 100.0, 'et': '2015-05-13 15:27', 'st': '2015-05-04 15:42', 'en': False, 't': '葡萄糖'},
         {'total': 250.0, 'et': '', 'st': '2015-05-07 08:52', 'en': False, 't': '葡萄糖'},
@@ -69,7 +71,9 @@ def main():
     # for t in test_case:
     #     print(split_ad(t))
     # print()
-    split()
+    # split()
+    merge()
+    logger.info('done')
 
 def split():
     for p in paients_source.find():
@@ -81,8 +85,22 @@ def split():
         paients_splited.save(splited)
 
 def merge():
-    for p in paients_merge.find():
-        pass
+    for p in paients_splited.find():
+        nu = p['nu']
+        merged = []
+
+        nu.sort(key=lambda x:x['d']+x['t']+str(x['wt']))
+        for n in nu:
+            if merged != [] and _is_same_nu(merged, n):
+                merged[-1]['v'] += n['v']
+            else:
+                merged.append(n)
+        p['nu'] = merged
+        paients_merged.save(p)
+
+def _is_same_nu(merged, n):
+    l = merged[-1]
+    return l['d']==n['d'] and l['t'] == n['t'] and l['wt']==n['wt']
 
 if __name__ == '__main__':
     main()
