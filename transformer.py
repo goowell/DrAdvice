@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from judge import get
 from logger import logger
-from db import paients_source, paients_splited, paients_merged
+from setting import nu_per_ml
+from db import paients_source, paients_splited, paients_merged, paients_calculated
 _get = get()
 
 def split_all_ad(one_child):
@@ -60,21 +61,6 @@ def str2date(str_d):
 def date2str(date_d):
     return date_d.strftime('%Y-%m-%d')
 
-def main():
-    logger.info('start')
-    test_case = [
-        {'total': 100.0, 'et': '2015-05-13 15:27', 'st': '2015-05-04 15:42', 'en': False, 't': '葡萄糖'},
-        {'total': 250.0, 'et': '', 'st': '2015-05-07 08:52', 'en': False, 't': '葡萄糖'},
-        {'total': 100.0, 'et': '', 'st': '2015-05-07 08:52', 'en': False, 't': '葡萄糖'},
-        {'total': 100.0, 'et': '2015-05-13 15:27', 'st': '2015-05-11 08:59', 'en': False, 't': '葡萄糖'}
-    ]
-    # for t in test_case:
-    #     print(split_ad(t))
-    # print()
-    # split()
-    merge()
-    logger.info('done')
-
 def split():
     for p in paients_source.find():
         splited = {
@@ -89,18 +75,52 @@ def merge():
         nu = p['nu']
         merged = []
 
-        nu.sort(key=lambda x:x['d']+x['t']+str(x['wt']))
+        nu.sort(key=lambda x:x['d']+x['t']+str(x['en'])+str(x['wt']))
         for n in nu:
-            if merged != [] and _is_same_nu(merged, n):
+            if merged != [] and _is_same_nu(merged[-1], n):
                 merged[-1]['v'] += n['v']
             else:
                 merged.append(n)
         p['nu'] = merged
         paients_merged.save(p)
+def cal_en():
+    for p in paients_merged.find():
+        nu = p['nu']
+        cal = []
 
-def _is_same_nu(merged, n):
-    l = merged[-1]
-    return l['d']==n['d'] and l['t'] == n['t'] and l['wt']==n['wt']
+        nu.sort(key=lambda x:x['d']+x['t']+str(x['en'])+str(x['wt']))
+        for n in nu:
+            if cal != [] and _is_same_day(cal[-1], n):
+                cal[-1]['v'] += n['v'] * n['wt'] * nu_per_ml[n['t']]
+            else:
+                cal.append(n)
+        for c in cal:
+            c.pop('t')
+            c.pop('wt')
+        p['nu'] = cal
+        paients_calculated.save(p)
+def _is_same_day(d1, d2):
+    return d1['d'] == d2['d'] and d1['en'] == d2['en']
+
+def _is_same_nu(d1, d2):
+    return d1['d']==d2['d'] and d1['t'] == d2['t'] and d1['wt']==d2['wt'] and d1['en'] == d2['en']
+
+def main():
+    logger.info('start')
+    test_case = [
+        {'total': 100.0, 'et': '2015-05-13 15:27', 'st': '2015-05-04 15:42', 'en': False, 't': '葡萄糖'},
+        {'total': 250.0, 'et': '', 'st': '2015-05-07 08:52', 'en': False, 't': '葡萄糖'},
+        {'total': 100.0, 'et': '', 'st': '2015-05-07 08:52', 'en': False, 't': '葡萄糖'},
+        {'total': 100.0, 'et': '2015-05-13 15:27', 'st': '2015-05-11 08:59', 'en': False, 't': '葡萄糖'}
+    ]
+    # for t in test_case:
+    #     print(split_ad(t))
+    # print()
+    # split()
+    merge()
+    cal_en()
+    logger.info('done')
+
 
 if __name__ == '__main__':
     main()
