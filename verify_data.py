@@ -1,4 +1,5 @@
 from transformer import *
+from logger import logger
 
 
 def verify_data(collection):
@@ -6,14 +7,22 @@ def verify_data(collection):
     for d in collection.find():
         info = d.get('d').get('info')
         if len(info) != 12 and info[0] != '1':
-            print('invalid patient info:' + d['_id'], len(info))
+            logger.error('invalid patient info:' + d['_id'], len(info))
         if len(d.get('d').get('doctor_advice')) == 0:
-            print('invalid doctor advice:' + d['_id'])
+            logger.error('invalid doctor advice:' + d['_id'])
         else:
+            has_long = False
+            has_short = False
             for a in d.get('d').get('doctor_advice'):
                 if len(a) != 18:
-                    print("invalid doctor advice: " + a)
-                
+                    logger.error('invalid doctor advice:' + d['_id'])
+                    logger.error("invalid doctor advice: " + a)
+                if a[3] == '长':
+                    has_long = True
+                else:
+                    has_short = True
+            if not (has_long and has_short):
+                logger.error('invalid doctor advice: ' + d['_id'] + ', long/short: {}/{}'.format(has_long, has_short) )
 def get_info(collection):
     'count PE'
 
@@ -29,16 +38,15 @@ def get_info(collection):
 def main():
     'main entry'
     from datetime import datetime
+    from db import paients_source
+
 
     start = datetime.now()
     print('hello..')
 
-    client = MongoClient('192.168.4.12')
-    collection = client.xinhuahos.paients
-    verify_data(collection)
+    verify_data(paients_source)
     # get_info(collection)
 
-    client.close()
 
     print(datetime.now() - start)
 
