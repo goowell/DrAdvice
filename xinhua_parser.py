@@ -127,6 +127,9 @@ def collect_files(dir_root):
     return files
 
 def refresh_db(dir_root):
+    '''
+    read html file, parse, save to DB
+    '''
     client = MongoClient(setting.db_ip)
     collection = client.xinhuahos.paients
     all_html = collect_files(dir_root)
@@ -178,12 +181,12 @@ def main():
 
     start = datetime.now()
     logger.info('hello..')
-    dir_root = r"C:\data\xxxxxxxxx\基本信息-原始\raw_data"
-    # refresh_db(dir_root)
+    dir_root = r"C:\data\xxxxxxxxx\基本信息-原始\03"
+    refresh_db(dir_root)
     # test_parse_file()
     # remove_style(test_str)
-    find_omitted(dir_root)
-    logger.info(datetime.now() - start)
+    # find_omitted(dir_root)
+    logger.info('done: '+str(datetime.now() - start))
 
 
 if __name__ == '__main__':

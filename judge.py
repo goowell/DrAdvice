@@ -39,6 +39,10 @@ def is_weight(data):
     '体重'
     return '体重' in data[5] and '测' not in data[5]
 
+def is_aminoAcid(data):
+    '小儿复方氨基酸针'
+    return '小儿复方氨基酸针' in data[5]
+
 def is_executed(data):
     '已执行'
     return '已执行' == data[16]
@@ -47,7 +51,7 @@ def is_en(data):
     la5 = data[5].lower()
     return '口服' in la5 or '鼻饲' in la5 or 'po' in la5
 
-is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree, is_neocate, is_peptide, is_pretermInfants, is_yingnai]
+is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree, is_neocate, is_peptide, is_pretermInfants, is_yingnai, is_aminoAcid]
 
 def is_nutrition(data):
     for j in is_nutritions:
@@ -63,7 +67,7 @@ class get(object):
     percent_p = re.compile(r'(?P<q>\d+)\s*%.*', flags=re.I)
     times_p = re.compile(r'(q|(维持))(?P<q>\d+)h', flags=re.I)
     times_p2 = re.compile(r'\*(?P<q>\d+)', flags=re.I)
-    weight_p = re.compile(r'(?P<q>\d+\.?\d*)((g)|(kg)).*')
+    weight_p = re.compile(r'(?P<q>\d+\.?\d*)((g)|(kg)).*', flags=re.I)
 
     def weight(self, src):
         str_src = src[5].lower()
@@ -126,6 +130,8 @@ class get(object):
             return '婴奶'
         if is_formula(src):
             return '配方奶'
+        if is_aminoAcid(src):
+            return '氨基酸'
         return None
 
     def start(self, src):
@@ -176,11 +182,32 @@ test_case = [
     '5%葡萄糖针 42 ml 鼻饲',
     'ssss555mlllll'
 ]
+test_parse_case=            [ 
+                "", 
+                "", 
+                "2015-03-20 10:51", 
+                "临", 
+                "药物", 
+                "◎小儿复方氨基酸针 60ml 静滴", 
+                "", 
+                "", 
+                "xxx", 
+                "2015-03-20 18:53", 
+                "", 
+                "xxx", 
+                "100ml*1瓶/瓶", 
+                "◎小儿复方氨基酸针(18AA-Ⅱ▲B", 
+                "", 
+                "已作废", 
+                "已执行", 
+                "xxx"
+            ]
+
 
 def main():
     _get = get()
     for t in test_case:
-        print(_get.quantity(t))
-
+        print(_get.quantity_p.search(t).group('q'))
+    print(_get.dict(test_parse_case))
 if __name__ == '__main__':
     main()

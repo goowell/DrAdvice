@@ -6,8 +6,8 @@ def verify_data(collection):
     'verify the data format is correct or not.'
     for d in collection.find():
         info = d.get('d').get('info')
-        if len(info) != 12 and info[0] != '1':
-            logger.error('invalid patient info:' + d['_id'], len(info))
+        if len(info) <12 and info[0] != '1':
+            logger.error('invalid patient info:' + d['_id']+str(info))
         if len(d.get('d').get('doctor_advice')) == 0:
             logger.error('invalid doctor advice:' + d['_id'])
         else:

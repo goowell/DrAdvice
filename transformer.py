@@ -62,6 +62,9 @@ def date2str(date_d):
     return date_d.strftime('%Y-%m-%d')
 
 def split():
+    '''
+    parse single advice to dict
+    '''
     for p in paients_source.find():
         splited = {
             '_id': p['_id'],
@@ -71,6 +74,9 @@ def split():
         paients_splited.save(splited)
 
 def merge():
+    '''
+    merge long and term advice by date
+    '''
     for p in paients_splited.find():
         nu = p['nu']
         merged = []
@@ -83,6 +89,7 @@ def merge():
                 merged.append(n)
         p['nu'] = merged
         paients_merged.save(p)
+
 def cal_en():
     for p in paients_merged.find():
         nu = p['nu']
@@ -116,7 +123,7 @@ def main():
     # for t in test_case:
     #     print(split_ad(t))
     # print()
-    # split()
+    split()
     merge()
     cal_en()
     logger.info('done')
@@ -124,3 +131,24 @@ def main():
 
 if __name__ == '__main__':
     main()
+#     info = [ 
+#     "1", 
+#     "儿外科", 
+#     "儿外二病区", 
+#     "徐秋叶之子", 
+#     "男", 
+#     "D77770", 
+#     "33", 
+#     "", 
+#     "2017-04-25 18:04", 
+#     "2017-05-15 13:48", 
+#     "先天性肛门缺如、闭锁和狭窄，伴瘘", 
+#     "申请归档(自动)", 
+#     "查看详情"
+# ]
+#     print(len(info))
+#     # info[2]=None
+#     info.append(info[2])
+#     info.remove(info[2])
+#     print(len(info))
+#     print(info)
