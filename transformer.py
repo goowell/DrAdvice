@@ -27,17 +27,29 @@ def _split_ad(dict_ad):
     '''
     ads = []
     st = str2date(dict_ad['st'])
+    firstDay=True
     if dict_ad['et']:
         et = str2date(dict_ad['et'])
-        while st <= et:
+        tbd = dict_ad['tbd']
+        if tbd==0:
+            print(dict_ad)
+        while st.date() <= et.date():
+            
+            if firstDay:
+                ratio = int(tbd*(24-st.hour)/24)/tbd
+            elif st.date() == et.date():
+                ratio = int(tbd*(et.hour)/24)/tbd
+            else:
+                ratio = 1
             ads.append({
                 'd': date2str(st),
                 't': dict_ad['t'],
                 'wt': dict_ad['wt'],
                 'en': dict_ad['en'],
-                'v': dict_ad['total']
+                'v': int(dict_ad['total']*ratio)
             })
             st = st + timedelta(days=1)
+            firstDay=False
 
     else:
         ads.append({

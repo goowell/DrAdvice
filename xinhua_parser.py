@@ -135,7 +135,11 @@ def refresh_db(dir_root):
     all_html = collect_files(dir_root)
     def _save(f): 
         logger.debug(f)
-        return collection.save(parse_one(f))
+        d = parse_one(f)
+        
+        collection.delete_one({'_id':d['_id'].lower()})
+        collection.delete_one({'_id':d['_id'].upper()})
+        return collection.insert_one(d)
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         fs = executor.map(_save, all_html)
@@ -181,12 +185,24 @@ def main():
 
     start = datetime.now()
     logger.info('hello..')
-    dir_root = r"C:\data\xxxxxxxxx\基本信息-原始\03"
-    refresh_db(dir_root)
+    dir_root = r"C:\data\xxxxxxxxx\基本信息-原始\raw_data\more"
+    # refresh_db(dir_root)
+    _test_parse_one()
+    # print(b)
     # test_parse_file()
     # remove_style(test_str)
     # find_omitted(dir_root)
     logger.info('done: '+str(datetime.now() - start))
+
+def _test_parse_one():
+    a=parse_one(r"C:\data\xxxxxxxxx\基本信息-原始\raw_data\more\b17493.htm")
+    client = MongoClient(setting.db_ip)
+    collection = client.xinhuahos.paients
+    logger.info(collection.delete_one({'_id':a["_id"].lower()}))
+    logger.info(collection.delete_one({'_id':a["_id"].upper()}))
+    logger.info(collection.insert_one(a))
+    # logger.info(a)
+    client.close()
 
 
 if __name__ == '__main__':
