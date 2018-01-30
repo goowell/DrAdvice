@@ -1,52 +1,67 @@
 from logger import logger
+from setting import names
+
 def is_neocate(data):
     '纽康特'
-    return '纽康特' if '纽康特' in data[5] else None
+    return names.nkt if '纽康特' in data[5] else None
 
 def is_neotate(data):
     '纽太特'
-    return '纽太特' if ('纽太特' in data[5] or '纽肽特' in data[5]) else None
+    return names.ntt if ('纽太特' in data[5] or '纽肽特' in data[5]) else None
 
 def is_lactoseFree(data):
     '免乳糖奶'
-    return '免乳糖奶' if '免乳' in data[5] else None
+    return names.mrtn if '免乳' in data[5] else None
 
 def is_alfare(data):
     '蔼尔舒'
-    return '蔼尔舒' if ('舒'in data[5] and ('蔼' in data[5] or '霭' in data[5])) else None
+    return names.aes if ('舒'in data[5] and ('蔼' in data[5] or '霭' in data[5])) else None
 
 def is_breastFeeding(data):
     '母乳'
-    return '母乳' if '母乳' in data[5] else None
+    return names.mr if '母乳' in data[5] else None
 
 def is_yingnai(data):
     '婴奶'
-    return '婴奶' if '婴' in data[5] else None
+    return names.yn if '婴' in data[5] else None
 
 def is_pretermInfants(data):
     '早奶'
-    return '早奶' if '早' in data[5] and 'ml' in data[5] else None
+    return names.zn if '早' in data[5] and 'ml' in data[5] else None
 
 def is_formula(data):
     '配方奶'
-    return '配方奶' if '配方' in data[5] else None
+    return names.pfn if '配方' in data[5] else None
 
 def is_peptide(data):
     '小百肽'
-    return '小百肽' if '小百肽' in data[5] else None
+    return names.xbt if '小百肽' in data[5] else None
+
+def is_midLong(data):
+    '中长链脂肪乳'
+    return names.zcl if '链脂肪乳' in data[5] and '静脉营养' in data[5] else None
+
+def is_fishOil(data):
+    '鱼油脂肪乳'
+    return names.yy if '鱼油' in data[5] and '静脉营养' in data[5] else None
+
+def is_babysuger(data):
+    '糖水'
+    d = data[5].lower()
+    return names.ts if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('酸钙' not in d) and '静脉营养' in data[5] else None
 
 def is_gluclose(data):
     '葡萄糖'
     d = data[5].lower()
-    return '葡萄糖' if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('酸钙' not in d) else None
+    return names.ptt if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('静脉营养' not in d) and ('酸钙' not in d) else None
+
+def is_aminoAcid(data):
+    '小儿复方氨基酸针'
+    return names.ajs if '小儿复方氨基酸针' in data[5] else None
 
 def is_weight(data):
     '体重'
     return '体重' in data[5] and ('测' not in data[5] and '称' not in data[5])
-
-def is_aminoAcid(data):
-    '小儿复方氨基酸针'
-    return '小儿复方氨基酸针' in data[5]
 
 def is_executed(data):
     '已执行'
@@ -56,7 +71,10 @@ def is_en(data):
     la5 = data[5].lower()
     return '口服' in la5 or '鼻饲' in la5 or 'po' in la5 or '空肠' in la5 or '胃造瘘' in la5 or '胃管' in la5
 
-is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree, is_neocate, is_peptide, is_pretermInfants, is_yingnai, is_aminoAcid, is_neotate]
+
+is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree,
+                 is_neocate, is_peptide, is_pretermInfants, is_yingnai, is_aminoAcid, 
+                 is_neotate, is_midLong, is_fishOil, is_babysuger]
 
 def is_nutrition(data):
     for j in is_nutritions:
@@ -69,7 +87,7 @@ import re
 
 class get(object):
     quantity_p = re.compile(r'(?P<q>\d+)\s*((ml)|(毫升)).*', flags=re.I)
-    quantity_p2 = re.compile(r'(?P<q>\d+)(\s|m).*', flags=re.I)
+    quantity_p2 = re.compile(r'(?P<q>\d+)(\s|m|g).*', flags=re.I)
     percent_p = re.compile(r'(?P<q>\d+)\s*(%|％).*', flags=re.I)
     times_p = re.compile(r'(q|(维持))(?P<q>\d+)(h|\s)', flags=re.I)
     times_p2 = re.compile(r'(\*|×|x)(?P<q>\d+)', flags=re.I)
@@ -141,27 +159,33 @@ class get(object):
 
     def type(self, src):
         if is_alfare(src):
-            return '蔼尔舒'
+            return names.aes
         if is_breastFeeding(src):
-            return '母乳'
+            return names.mr
         if is_gluclose(src):
-            return '葡萄糖'
+            return names.ptt
         if is_lactoseFree(src):
-            return '免乳糖奶'
+            return names.mrtn
         if is_neocate(src):
-            return '纽康特'
+            return names.nkt
         if is_neotate(src):
-            return '纽太特'
+            return names.ntt
         if is_peptide(src):
-            return '小百肽'
+            return names.xbt
         if is_pretermInfants(src):
-            return '早奶'
+            return names.zn
         if is_yingnai(src):
-            return '婴奶'
+            return names.yn
         if is_formula(src):
-            return '配方奶'
+            return names.pfn
         if is_aminoAcid(src):
-            return '氨基酸'
+            return names.ajs
+        if is_midLong(src):
+            return names.zcl
+        if is_fishOil(src):
+            return names.yy
+        if is_babysuger(src):
+            return names.ts
         return None
 
     def start(self, src):
@@ -193,8 +217,8 @@ class get(object):
             'st': self.start(src),
             'et': self.stop(src),
             't': t,
-            'wt': self.percent(src) if t == '葡萄糖' else 1,
-            'en': t != '葡萄糖' or is_en(src),
+            'wt': self.percent(src) if t == names.ptt else 1,
+            'en': t != names.ptt or is_en(src),
             'total': self.quantity(src) * tbd,
             'tbd': tbd
         }
