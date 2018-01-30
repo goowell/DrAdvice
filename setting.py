@@ -1,6 +1,7 @@
 db_ip = '192.168.8.112'
 db_ip = '192.168.2.103'
 db_ip = '10.10.111.22'
+
 class names(object):
     ptt='葡萄糖'
     xbt='小百肽'
@@ -13,6 +14,10 @@ class names(object):
     nkt='纽康特'
     ntt='纽太特'
     ajs='氨基酸'
+    zcl='中长链脂肪乳'
+    yy='鱼油脂肪乳'
+    ts='糖水'
+
 
 
 
