@@ -9,6 +9,7 @@ def split_all_ad(one_child):
     one_p_nutrition = []
     one_p_weight = []
     for a in one_child.get('d').get('doctor_advice'):
+        # print(a)
         da = _get.dict(a)
         if da and da.get('t'):
             one_p_nutrition.extend(_split_ad(da))
@@ -27,33 +28,37 @@ def _split_ad(dict_ad):
     '''
     ads = []
     st = str2date(dict_ad['st'])
+    temp_date = st
     firstDay=True
     if dict_ad['et']:
         et = str2date(dict_ad['et'])
         tbd = dict_ad['tbd']
-        if tbd==0:
-            print(dict_ad)
-        while st.date() <= et.date():
+        while temp_date.date() <= et.date():
             
             if firstDay:
-                ratio = int(tbd*(24-st.hour)/24)/tbd
-            elif st.date() == et.date():
+                ratio = int((tbd*(24-temp_date.hour))/24)/tbd if tbd>1.01 else 1
+            elif temp_date.date() == et.date() and tbd>=1:
                 ratio = int(tbd*(et.hour)/24)/tbd
             else:
-                ratio = 1
+                temp_r = tbd*(temp_date-st).days
+                ratio = 1 if (tbd>=0.99 or (temp_r-int(temp_r))<tbd) else 0
+            if ratio==0:
+                temp_date = temp_date + timedelta(days=1)
+                firstDay=False
+                continue
             ads.append({
-                'd': date2str(st),
+                'd': date2str(temp_date),
                 't': dict_ad['t'],
                 'wt': dict_ad['wt'],
                 'en': dict_ad['en'],
                 'v': int(dict_ad['total']*ratio)
             })
-            st = st + timedelta(days=1)
+            temp_date = temp_date + timedelta(days=1)
             firstDay=False
 
     else:
         ads.append({
-            'd': date2str(st),
+            'd': date2str(temp_date),
             'en': dict_ad['en'],
             'wt': dict_ad['wt'],
             't': dict_ad['t'],
@@ -136,8 +141,8 @@ def main():
     #     print(split_ad(t))
     # print()
     split()
-    merge()
-    cal_en()
+    # merge()
+    # cal_en()
     logger.info('done')
 
 

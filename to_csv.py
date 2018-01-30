@@ -1,22 +1,21 @@
 from db import paients_calculated
 from logger import logger
 from datetime import datetime
-from setting import invalid
 
 def main():
     'main entry'
     start = datetime.now()
     logger.info('hello..')
+    nu2csv()
+    print('Elapsed time: ', datetime.now() - start)
+
+def nu2csv():
     paients = paients_calculated.find().sort('_id')
     group = {}
     for p in paients:
-        if p['_id'] in invalid:
-            continue
         if len(p['info'])==13:
             p['info'].append(p['info'][2])
             p['info'].remove(p['info'][2])
-        # print(p)
-        # print(p['info'])
         d = p['info'][7][0:7]
         if d=='':
             print(p['info'])
@@ -28,10 +27,46 @@ def main():
 
     for k in group:
         print(k)   
-        toCsv(k+'.csv',group[k])
-    print('Elapsed time: ', datetime.now() - start)
+        _nu2csv(k+'.csv',group[k])
 
-def toCsv(file_name, paients):
+def _nu2csv(file_name, paients):
+    f = open(file_name,mode='w')
+    header = '序号,姓名,住院号,入科年龄,入科日期,入科天数,日期,体重,EN,PN,其他\n'
+    p_info = '{0},{1},{2},{3},{4},,,,,,{5}\n'
+    daily_info = ',,,,,{0},{1},{2},{3},{4},\n'
+    counter = 1
+    f.write(header)
+    for p in paients:   
+        info= p_info.format(counter,p['info'][2],p['_id'],p['info'][5],p['info'][7],'#'.join(p['info']))
+        f.write(info)
+        nu_counter = 0
+        len_nu = len(p['nu'])
+        while nu_counter < len_nu:
+            nu = p['nu'][nu_counter]
+            date_nu = nu['d']
+            en_nu,pn_nu = 0,0
+
+            if nu['en']:
+                en_nu = nu['v']
+            else:
+                pn_nu = nu['v']
+            if (nu_counter < len_nu - 1):
+                next_nu = p['nu'][nu_counter+1]
+                if next_nu['d'] == date_nu:
+                    if next_nu['en']:
+                        en_nu = next_nu['v']
+                    else:
+                        pn_nu = next_nu['v']
+                    nu_counter += 1
+            nu_counter += 1
+            wight = _get_wight(p, date_nu)
+
+            one_nu = daily_info.format(_total_days(p, date_nu), date_nu,wight,en_nu,pn_nu)
+            f.write(one_nu)
+        counter += 1
+    f.close()
+
+def raw2csv(file_name, paients):
     f = open(file_name,mode='w')
     header = '序号,姓名,住院号,入科年龄,入科日期,入科天数,日期,体重,EN,PN,其他\n'
     p_info = '{0},{1},{2},{3},{4},,,,,,{5}\n'
