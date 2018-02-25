@@ -45,15 +45,15 @@ def is_fishOil(data):
     '鱼油脂肪乳'
     return names.yy if '鱼油' in data[5] and '静脉营养' in data[5] else None
 
-def is_babysuger(data):
-    '糖水'
-    d = data[5].lower()
-    return names.ts if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('酸钙' not in d) and '静脉营养' in data[5] else None
+# def is_babysuger(data):
+#     '糖水'
+#     d = data[5].lower()
+#     return names.ts if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('酸钙' not in d) and '静脉营养' in data[5] else None
 
 def is_gluclose(data):
     '葡萄糖'
     d = data[5].lower()
-    return names.ptt if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('静脉营养' not in d) and ('酸钙' not in d) else None
+    return names.ptt if ('葡萄' in d or 'gs' in d.lower()) and ('抽胃液' not in d) and ('%' in d or '％' in d ) and ('tpn' not in d) and ('长期' not in d) and ('酸钙' not in d) else None
 
 def is_aminoAcid(data):
     '小儿复方氨基酸针'
@@ -74,7 +74,7 @@ def is_en(data):
 
 is_nutritions = [is_alfare, is_breastFeeding, is_formula, is_gluclose, is_lactoseFree,
                  is_neocate, is_peptide, is_pretermInfants, is_yingnai, is_aminoAcid, 
-                 is_neotate, is_midLong, is_fishOil, is_babysuger]
+                 is_neotate, is_midLong, is_fishOil]
 
 def is_nutrition(data):
     for j in is_nutritions:
@@ -184,8 +184,8 @@ class get(object):
             return names.zcl
         if is_fishOil(src):
             return names.yy
-        if is_babysuger(src):
-            return names.ts
+        # if is_babysuger(src):
+        #     return names.ts
         return None
 
     def start(self, src):

@@ -6,3 +6,6 @@ paients_source = client.xinhuahos.paients
 paients_splited = client.xinhuahos.paients_splited
 paients_merged = client.xinhuahos.paients_merged
 paients_calculated = client.xinhuahos.paients_calculated
+paients_pn = client.xinhuahos.paients_pn
+paients_sn = client.xinhuahos.paients_sn
+

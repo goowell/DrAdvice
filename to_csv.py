@@ -83,9 +83,9 @@ def _groupBySt(paients):
 
 def _raw2csv(file_name, paients):
     f = open(file_name,mode='w')
-    header = '序号,姓名,住院号,入科年龄,入科日期,入科天数,日期,体重,EN,PN,其他,纽康特,纽太特,免乳糖奶,蔼尔舒,母乳,婴奶,早奶,配方奶,小百肽,中长链脂肪乳,鱼油脂肪乳,糖水,葡萄糖,氨基酸,糖水pn,葡萄糖pn,氨基酸pn\n'
+    header = '序号,姓名,住院号,入科年龄,入科日期,入科天数,日期,体重,EN,PN,其他,纽康特,纽太特,免乳糖奶,蔼尔舒,母乳,婴奶,早奶,配方奶,小百肽,中长链脂肪乳,鱼油脂肪乳,葡萄糖,氨基酸,葡萄糖pn,氨基酸pn\n'
     p_info = '{0},{1},{2},{3},{4},,,,,,{5}\n'
-    daily_info = ',,,,,{0},{1},{2},,,,{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19}\n'
+    daily_info = ',,,,,{0},{1},{2},,,,{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}\n'
     counter = 1
     f.write(header)
     for p in paients:   
@@ -126,10 +126,10 @@ def _raw2csv(file_name, paients):
             v_en_dict.get(names.xbt,_0),
             v_en_dict.get(names.zcl,_0),
             v_en_dict.get(names.yy,_0),
-            v_en_dict.get(names.ts,_0),
+            # v_en_dict.get(names.ts,_0),
             v_en_dict.get(names.ptt,_0),
             v_pn_dict.get(names.ajs,_0),
-            v_pn_dict.get(names.ts,_0),
+            # v_pn_dict.get(names.ts,_0),
             v_pn_dict.get(names.ptt,_0),
             v_pn_dict.get(names.ajs,_0)
             )
