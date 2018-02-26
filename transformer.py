@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from judge import get
 from logger import logger
-from setting import nu_per_ml
-from db import paients_source, paients_splited, paients_merged, paients_calculated
+from setting import nu_per_ml,names
+from db import paients_source, paients_splited, paients_merged, paients_calculated,paients_pn,paients_splited_with_excel
 _get = get()
 
 def split_all_ad(one_child):
@@ -82,7 +82,9 @@ def split():
     '''
     parse single advice to dict
     '''
+    paients_splited.remove
     for p in paients_source.find():
+
         splited = {
             '_id': p['_id'],
             'info': p['d']['info']
@@ -94,7 +96,8 @@ def merge():
     '''
     merge long and term advice by date
     '''
-    for p in paients_splited.find():
+    paients_merged.remove()
+    for p in paients_splited_with_excel.find():
         nu = p['nu']
         merged = []
 
@@ -105,7 +108,7 @@ def merge():
             else:
                 merged.append(n)
         p['nu'] = merged
-        paients_merged.save(p)
+        paients_merged.insert_one(p)
 
 def cal_en():
     for p in paients_merged.find():
@@ -128,6 +131,60 @@ def _is_same_day(d1, d2):
 
 def _is_same_nu(d1, d2):
     return d1['d']==d2['d'] and d1['t'] == d2['t'] and d1['wt']==d2['wt'] and d1['en'] == d2['en']
+def _split_excel_pn(excel_pn):
+    '''
+    excel_pn=[
+        {
+            "10%GS" : 0,
+            "脂肪乳" : 0,
+            "date" : "2014-10-02",
+            "25%GS" : 0,
+            "6%AA" : 0
+        }, 
+    ]
+    '''
+    pn=[]
+    for e_pn in excel_pn:
+        if e_pn[r"10%GS"]>0:
+            pn.append({
+            "t" : names.ptt,
+            "v" : e_pn[r"10%GS"],
+            "d" : e_pn[r"date"],
+            "en" : False,
+            "wt" : 0.1
+        })
+        if e_pn[r"25%GS"]>0:
+            pn.append({
+            "t" : names.ptt,
+            "v" : e_pn[r"25%GS"],
+            "d" : e_pn[r"date"],
+            "en" : False,
+            "wt" : 0.25
+        })
+        if e_pn[r"6%AA"]>0:
+            pn.append({
+            "t" : names.ajs,
+            "v" : e_pn[r"6%AA"],
+            "d" : e_pn[r"date"],
+            "en" : False,
+            "wt" : 1
+        })
+        if e_pn[r"脂肪乳"]>0:
+            pn.append({
+            "t" : names.yy,
+            "v" : e_pn[r"脂肪乳"],
+            "d" : e_pn[r"date"],
+            "en" : False,
+            "wt" : 1
+        })
+    return pn
+def combine_splited_and_excel():
+    paients_splited_with_excel.remove()
+    for one_nu in paients_splited.find():
+        items = paients_splited.find({'sn':one_nu.get('_id')})
+        for item in items:
+            one_nu['nu'].extend(_split_excel_pn(item['pn']))
+        paients_splited_with_excel.insert_one(one_nu)
 
 def main():
     logger.info('start')
@@ -141,7 +198,8 @@ def main():
     #     print(split_ad(t))
     # print()
     split()
-    # merge()
+    combine_splited_and_excel()
+    merge()
     # cal_en()
     logger.info('done')
 

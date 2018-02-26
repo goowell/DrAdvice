@@ -57,7 +57,7 @@ def is_gluclose(data):
 
 def is_aminoAcid(data):
     '小儿复方氨基酸针'
-    return names.ajs if '小儿复方氨基酸针' in data[5] else None
+    return names.ajs if '小儿复方氨基酸' in data[5] else None
 
 def is_weight(data):
     '体重'
@@ -87,6 +87,7 @@ import re
 
 class get(object):
     quantity_p = re.compile(r'(?P<q>\d+)\s*((ml)|(毫升)).*', flags=re.I)
+    quantity_p1 = re.compile(r'(?P<q>\d+\.\d+)g.*', flags=re.I)
     quantity_p2 = re.compile(r'(?P<q>\d+)(\s|m|g).*', flags=re.I)
     percent_p = re.compile(r'(?P<q>\d+)\s*(%|％).*', flags=re.I)
     times_p = re.compile(r'(q|(维持))(?P<q>\d+)(h|\s)', flags=re.I)
@@ -107,6 +108,9 @@ class get(object):
         res = self.quantity_p.search(str_src)
         if res:
             return int(res.groupdict()['q'])
+        res = self.quantity_p1.search(str_src)
+        if res:
+            return float(res.groupdict()['q'])
         res = self.quantity_p2.search(str_src)
         if res:
             return int(res.groupdict()['q'])
@@ -217,8 +221,8 @@ class get(object):
             'st': self.start(src),
             'et': self.stop(src),
             't': t,
-            'wt': self.percent(src) if t == names.ptt else 1,
-            'en': t != names.ptt or is_en(src),
+            'wt': self.percent(src) if t == names.ptt else (0.06 if t == names.ajs and 'ml' in src[5].lower() else 1),
+            'en': is_en(src),
             'total': self.quantity(src) * tbd,
             'tbd': tbd
         }
@@ -236,7 +240,8 @@ class get(object):
         if is_weight(src):
             return self.dict_wet(src)
         la5 = src[5].lower()
-        if  '''/h''' not in la5 and ('ml' in la5 or 'q' in la5 or '毫升' in la5) and is_executed(src):
+        # if  '''/h''' not in la5 and ('m' in la5 or 'q' in la5 or '毫升' in la5 or 'g' in la5) and is_executed(src):
+        if  '糖速' not in la5 and ('ml' in la5 or 'q' in la5 or '毫升' in la5 or 'g' in la5) and is_executed(src):
             name = is_nutrition(src)
             if name:
                 return self.dict_ad(src)
@@ -249,7 +254,8 @@ test_case = [
     '5%葡萄糖针 50ml 口服',
     '10%葡萄糖针 50ml 静滴 st',
     '5%葡萄糖针 42 ml 鼻饲',
-    'ss29%ss555mlllll'
+    'ss29%ss555mlllll',
+    '酚磺乙胺注射液 0.125g 静滴 qd'
 ]
 test_case_times = [
     '早奶 44ml×4次胃造瘘空肠管滴入(45分钟/次)',
@@ -280,8 +286,11 @@ test_parse_case=            [
 def main():
     _get = get()
     for t in test_case:
-        print(_get.quantity_p2.search(t).group('q'))
-        print(_get.percent_p.search(t).group('q'))
+        try:
+            print(_get.quantity_p1.search(t).group('q'))
+            print(_get.percent_p.search(t).group('q'))
+        except Exception as identifier:
+            pass
     for t in test_case_times:
         print(_get.times_p2.search(t).group('q'))
     print(_get.dict(test_parse_case))

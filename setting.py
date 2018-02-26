@@ -32,7 +32,9 @@ nu_per_ml = {
     names.mrtn  :0.66,
     names.nkt   :0.71,
     names.ntt   :0.71,
-    names.ajs   :0.24    
+    names.ajs   :4,
+    names.zcl   :2,
+    names.yy    :10    
 }
 protein_per_ml = {
     names.ptt   :0,
@@ -45,5 +47,7 @@ protein_per_ml = {
     names.mrtn  :0.014,
     names.nkt   :0.0195,
     names.ntt   :0.0193,
-    names.ajs   :0.06    
+    names.ajs   :1,    
+    names.zcl   :0,
+    names.yy    :0    
 }

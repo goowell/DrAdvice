@@ -105,7 +105,7 @@ def parse_pn_from_excel():
         except KeyError as identifier:
             print(p['name'])
             for sn in sns.keys():
-                if p['name'][:-2] in sn:
+                if p['name'][:3] in sn or ((p['name'][0] in sn or p['name'][1] in sn or p['name'][-12:-13] in sn) and p['name'][-8:] in sn):
                     p.update({'sn':sns[sn]})
         paients_pn.insert_one(p)
 
@@ -154,7 +154,7 @@ def onefile(filename, patients):
                     '脂肪乳':r[idx_zfr].value if r[idx_zfr].ctype==xlrd.XL_CELL_NUMBER else 0,
                     '6%AA':r[idx_6aa].value if r[idx_6aa].ctype==xlrd.XL_CELL_NUMBER else 0,
                     '10%GS':r[idx_10gs].value if r[idx_10gs].ctype==xlrd.XL_CELL_NUMBER else 0,
-                    '20%GS':r[idx_25gs].value if r[idx_25gs].ctype==xlrd.XL_CELL_NUMBER else 0                    
+                    '25%GS':r[idx_25gs].value if r[idx_25gs].ctype==xlrd.XL_CELL_NUMBER else 0                    
                 }
                 p['pn'].append(one_pn)
 
