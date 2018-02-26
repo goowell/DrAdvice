@@ -118,9 +118,9 @@ def _raw2csv(file_name, paients):
                 nu_counter += 1
             nu_counter += 1
             if src_info:
-                if date_nu< src_info['入科日期'][:9]:
+                if date_nu< src_info['入科日期'][:10]:
                     continue
-                if date_nu > src_info['出科日期'][:9]:
+                if date_nu > src_info['出科日期'][:10]:
                     break
             _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f)
 

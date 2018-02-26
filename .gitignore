@@ -1,3 +1,8 @@
+#project specify
+*.csv
+*.7z
+*.log
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
