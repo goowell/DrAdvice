@@ -1,7 +1,8 @@
-from db import paients_calculated,paients_merged
+from db import paients_calculated,paients_merged,paients_info
 from logger import logger
 from datetime import datetime
 from setting import names, nu_per_ml,protein_per_ml
+import re
 
 _0=0
 
@@ -89,7 +90,10 @@ def _raw2csv(file_name, paients):
     daily_info = ',,,,,{},{},{},{},{},{},,{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n'
     counter = 1
     f.write(header)
-    for p in paients:   
+    for p in paients:
+        src_info = paients_info.find_one({'住院号': re.compile(p['_id'], re.IGNORECASE)})
+        if not src_info:
+            logger.error('cannot find info from source: ' + p['_id'])
         info= p_info.format(counter,p['info'][2],p['_id'],p['info'][5],p['info'][7],'#'.join(p['info']))
         f.write(info)
         nu_counter = 0
@@ -113,58 +117,65 @@ def _raw2csv(file_name, paients):
                     v_pn_dict.update({next_nu['t']:next_nu['v']*next_nu['wt']+v_pn_dict.get(next_nu['t'],0)})
                 nu_counter += 1
             nu_counter += 1
-
-            wight = _get_wight(p, date_nu)
-            one_nu = daily_info.format(_total_days(p, date_nu), date_nu,wight,
-            v_en_dict.get(names.nkt,_0)*nu_per_ml[names.nkt]+
-            v_en_dict.get(names.ntt,_0)*nu_per_ml[names.ntt]+
-            v_en_dict.get(names.mrtn,_0)*nu_per_ml[names.mrtn]+
-            v_en_dict.get(names.aes,_0)*nu_per_ml[names.aes]+
-            v_en_dict.get(names.mr,_0)*nu_per_ml[names.mr]+
-            v_en_dict.get(names.yn,_0)*nu_per_ml[names.yn]+
-            v_en_dict.get(names.zn,_0)*nu_per_ml[names.zn]+
-            v_en_dict.get(names.pfn,_0)*nu_per_ml[names.pfn]+
-            v_en_dict.get(names.xbt,_0)*nu_per_ml[names.xbt]+
-            v_en_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+
-            v_en_dict.get(names.ajs,_0)*nu_per_ml[names.ajs],
-            v_pn_dict.get(names.zcl,_0)*nu_per_ml[names.zcl]+
-            v_pn_dict.get(names.yy,_0)*nu_per_ml[names.yy]+
-            v_pn_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+
-            v_pn_dict.get(names.ajs,_0)*nu_per_ml[names.ajs],
-
-            v_en_dict.get(names.nkt,_0)*protein_per_ml[names.nkt]+
-            v_en_dict.get(names.ntt,_0)*protein_per_ml[names.ntt]+
-            v_en_dict.get(names.mrtn,_0)*protein_per_ml[names.mrtn]+
-            v_en_dict.get(names.aes,_0)*protein_per_ml[names.aes]+
-            v_en_dict.get(names.mr,_0)*protein_per_ml[names.mr]+
-            v_en_dict.get(names.yn,_0)*protein_per_ml[names.yn]+
-            v_en_dict.get(names.zn,_0)*protein_per_ml[names.zn]+
-            v_en_dict.get(names.pfn,_0)*protein_per_ml[names.pfn]+
-            v_en_dict.get(names.xbt,_0)*protein_per_ml[names.xbt]+
-            v_en_dict.get(names.ptt,_0)*protein_per_ml[names.ptt]+
-            v_en_dict.get(names.ajs,_0)*protein_per_ml[names.ajs]+
-            v_pn_dict.get(names.ajs,_0),
-            
-            v_en_dict.get(names.nkt,_0),
-            v_en_dict.get(names.ntt,_0),
-            v_en_dict.get(names.mrtn,_0),
-            v_en_dict.get(names.aes,_0),
-            v_en_dict.get(names.mr,_0),
-            v_en_dict.get(names.yn,_0),
-            v_en_dict.get(names.zn,_0),
-            v_en_dict.get(names.pfn,_0),
-            v_en_dict.get(names.xbt,_0),
-            v_en_dict.get(names.ptt,_0),
-            v_en_dict.get(names.ajs,_0),
-            v_pn_dict.get(names.zcl,_0),
-            v_pn_dict.get(names.yy,_0),
-            v_pn_dict.get(names.ptt,_0),
-            v_pn_dict.get(names.ajs,_0)
-            )
-            f.write(one_nu)
+            if src_info:
+                if date_nu< src_info['入科日期'][:9]:
+                    continue
+                if date_nu > src_info['出科日期'][:9]:
+                    break
+            _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f)
 
         counter += 1
     f.close()
+
+def _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f):
+    wight = _get_wight(p, date_nu)
+    one_nu = daily_info.format(_total_days(p, date_nu), date_nu,wight,
+    v_en_dict.get(names.nkt,_0)*nu_per_ml[names.nkt]+
+    v_en_dict.get(names.ntt,_0)*nu_per_ml[names.ntt]+
+    v_en_dict.get(names.mrtn,_0)*nu_per_ml[names.mrtn]+
+    v_en_dict.get(names.aes,_0)*nu_per_ml[names.aes]+
+    v_en_dict.get(names.mr,_0)*nu_per_ml[names.mr]+
+    v_en_dict.get(names.yn,_0)*nu_per_ml[names.yn]+
+    v_en_dict.get(names.zn,_0)*nu_per_ml[names.zn]+
+    v_en_dict.get(names.pfn,_0)*nu_per_ml[names.pfn]+
+    v_en_dict.get(names.xbt,_0)*nu_per_ml[names.xbt]+
+    v_en_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+
+    v_en_dict.get(names.ajs,_0)*nu_per_ml[names.ajs],
+    v_pn_dict.get(names.zcl,_0)*nu_per_ml[names.zcl]+
+    v_pn_dict.get(names.yy,_0)*nu_per_ml[names.yy]+
+    v_pn_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+
+    v_pn_dict.get(names.ajs,_0)*nu_per_ml[names.ajs],
+
+    v_en_dict.get(names.nkt,_0)*protein_per_ml[names.nkt]+
+    v_en_dict.get(names.ntt,_0)*protein_per_ml[names.ntt]+
+    v_en_dict.get(names.mrtn,_0)*protein_per_ml[names.mrtn]+
+    v_en_dict.get(names.aes,_0)*protein_per_ml[names.aes]+
+    v_en_dict.get(names.mr,_0)*protein_per_ml[names.mr]+
+    v_en_dict.get(names.yn,_0)*protein_per_ml[names.yn]+
+    v_en_dict.get(names.zn,_0)*protein_per_ml[names.zn]+
+    v_en_dict.get(names.pfn,_0)*protein_per_ml[names.pfn]+
+    v_en_dict.get(names.xbt,_0)*protein_per_ml[names.xbt]+
+    v_en_dict.get(names.ptt,_0)*protein_per_ml[names.ptt]+
+    v_en_dict.get(names.ajs,_0)*protein_per_ml[names.ajs]+
+    v_pn_dict.get(names.ajs,_0),
+
+    v_en_dict.get(names.nkt,_0),
+    v_en_dict.get(names.ntt,_0),
+    v_en_dict.get(names.mrtn,_0),
+    v_en_dict.get(names.aes,_0),
+    v_en_dict.get(names.mr,_0),
+    v_en_dict.get(names.yn,_0),
+    v_en_dict.get(names.zn,_0),
+    v_en_dict.get(names.pfn,_0),
+    v_en_dict.get(names.xbt,_0),
+    v_en_dict.get(names.ptt,_0),
+    v_en_dict.get(names.ajs,_0),
+    v_pn_dict.get(names.zcl,_0),
+    v_pn_dict.get(names.yy,_0),
+    v_pn_dict.get(names.ptt,_0),
+    v_pn_dict.get(names.ajs,_0)
+    )
+    f.write(one_nu)
 def _get_wight(p, date_nu):
     wight = 0
     for w in p['wt']:

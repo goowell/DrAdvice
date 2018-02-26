@@ -3,12 +3,12 @@ from pyexcel import get_book
 import xlrd
 import datetime
 import re
-from db import paients_pn,paients_sn
+from db import paients_pn,paients_info
 
 def main():
     logger.info('start...')
-    parse_pn_from_excel()
-    # parse_sn_from_excel()
+    # parse_pn_from_excel()
+    parse_sn_from_excel()
     logger.info('done')
 
 def parse_sn_from_excel():
@@ -18,17 +18,23 @@ def parse_sn_from_excel():
         r"C:\data\xxxxxxxxx\基本信息-最新\2016年基本信息.xlsx",
         r"C:\data\xxxxxxxxx\基本信息-最新\2017年基本信息.xlsx"
     ]
-    patients={}
+    patients=[]
     '''
-    {
-        'namexx':'snxx'
-        ...
-    }
+    [
+        {
+            'namexx':'snxx'
+            ...
+        },
+    ...
+        
+    ]
     '''
     for filename in filenames:
         onefilesn(filename, patients)
-    paients_sn.remove()
-    paients_sn.insert_one(patients)
+    paients_info.remove()
+    for p in patients:
+        paients_info.insert_one(p)
+    print(patients)
 
 def onefilesn(filename, patients):
     a = xlrd.open_workbook(filename=filename)
@@ -42,6 +48,11 @@ def onefilesn(filename, patients):
         idx_name=0
         idx_sn=0
         idx_checkin=0
+        if sheet.nrows<3:
+            continue
+        row0 = sheet.row(0)
+        row1 = sheet.row(1)
+
         for r in sheet.get_rows():
             if idx_name==0:
                 for d in r:
@@ -58,14 +69,23 @@ def onefilesn(filename, patients):
                     idx_checkin += 1
                 if idx_checkin > 20 or idx_name > 12 or idx_sn> 12:
                     raise Exception('invalid data: '+sheet_name)
+                print(idx_name,idx_sn, idx_checkin)
                 continue
             if r[idx_name].value != '' and r[1].ctype==xlrd.XL_CELL_TEXT:
-                k=r[idx_name].value+xlrd.xldate_as_datetime(r[idx_checkin].value,0).date().isoformat()
-                if k in patients.keys():
-                    print({k:r[idx_sn].value},sheet_name)
-                    print(patients[k])
-                else:
-                    patients.update({k:r[idx_sn].value})
+                # _getSN(r, idx_name, idx_checkin, patients, idx_sn, sheet_name)
+                one_info = {}
+                for i in range(len(r)):
+                    one_info.update({row0[i].value if row1[i].ctype==xlrd.XL_CELL_EMPTY else
+                        row1[i].value :r[i].value if r[i].ctype!=xlrd.XL_CELL_DATE else xlrd.xldate_as_datetime(r[i].value,0).isoformat()})
+                patients.append(one_info)
+
+def _getSN(r, idx_name, idx_checkin, patients, idx_sn, sheet_name):
+    k=r[idx_name].value+xlrd.xldate_as_datetime(r[idx_checkin].value,0).date().isoformat()
+    if k in patients.keys():
+        print({k:r[idx_sn].value},sheet_name)
+        print(patients[k])
+    else:
+        patients.update({k:r[idx_sn].value})
         # patients.update({sns_key:sns})
     
     
@@ -98,7 +118,7 @@ def parse_pn_from_excel():
     for filename in filenames:
         onefile(filename, patients)
     paients_pn.remove()
-    sns = paients_sn.find_one()
+    sns = paients_info.find_one()
     for p in patients:
         try:
             p.update({'sn':sns[p['name']]})
