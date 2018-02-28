@@ -92,11 +92,16 @@ class get(object):
     percent_p = re.compile(r'(?P<q>\d+)\s*(%|％).*', flags=re.I)
     times_p = re.compile(r'(q|(维持))(?P<q>\d+)(h|\s)', flags=re.I)
     times_p2 = re.compile(r'(\*|×|x)(?P<q>\d+)', flags=re.I)
-    weight_p = re.compile(r'(?P<q>\d+\.?\d*).*', flags=re.I)
+    weight_p = re.compile(r'(?P<q>\d+\.?\d*)((千克)|(公斤)|克|g|(kg)).*', flags=re.I)
+    weight_p1 = re.compile(r'(?P<q>\d+\.?\d*).*', flags=re.I)
 
     def weight(self, src):
         str_src = src[5].lower()
         res = self.weight_p.search(str_src)
+        if res:
+            v = res.groupdict()['q']
+            return float(v) if float(v)<70 else float(v)/1000
+        res = self.weight_p1.search(str_src)
         if res:
             v = res.groupdict()['q']
             return float(v) if float(v)<70 else float(v)/1000

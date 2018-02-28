@@ -1,6 +1,14 @@
 from transformer import *
 from logger import logger
 
+def find_missing():
+    from db import paients_source, paients_info
+    import re
+    for pi in paients_info.find():
+        if paients_source.find({'_id': re.compile(pi['住院号'], re.IGNORECASE)}).count()>0:
+            pass
+        else:
+            print(pi['住院号'])
 
 def verify_data(collection):
     'verify the data format is correct or not.'
@@ -44,8 +52,9 @@ def main():
     start = datetime.now()
     print('hello..')
 
-    verify_data(paients_source)
+    # verify_data(paients_source)
     # get_info(collection)
+    find_missing()
 
 
     print(datetime.now() - start)

@@ -2,7 +2,11 @@ from db import paients_calculated,paients_merged,paients_info
 from logger import logger
 from datetime import datetime
 from setting import names, nu_per_ml,protein_per_ml
+from pygrowup import Calculator
 import re
+import csv
+import os
+ 
 
 _0=0
 
@@ -10,8 +14,10 @@ def main():
     'main entry'
     start = datetime.now()
     logger.info('hello..')
-    # nu2csv()
+    nu2csv() 
     raw2csv()
+    summary2csv()
+    summary2csv(True)
     print('Elapsed time: ', datetime.now() - start)
 
 def nu2csv():
@@ -66,6 +72,127 @@ def raw2csv():
         print(k)   
         _raw2csv(k+'_raw.csv',group[k])
 
+def summary2csv(one_file=False):
+    paients = paients_merged.find().sort('_id')
+    group = _groupBySt(paients)
+    if one_file:
+        os.remove('All_avg.csv')
+
+    for k in group:
+        if one_file:
+            _summary2csv('All_avg.csv',group[k],one_file=one_file)
+        else:
+            _summary2csv(k+'_avg.csv',group[k])
+
+def _summary2csv(file_name, paients, one_file=False):
+    calculator = Calculator(adjust_height_data=False, adjust_weight_scores=False,
+                    include_cdc=False, logger_name='pygrowup',
+                    log_level='INFO')
+    new_file = not os.path.isfile(file_name)
+
+    open_mode = 'a' if one_file else 'w'
+    ff=open(file_name,mode=open_mode, newline='')
+    f = csv.writer(ff)
+    header = '序号,姓名,性别,年龄,住院号,出生日期,胎龄,出生体重,Aparg评分,既往手术次数,既往手术名称,入科诊断,出科主要诊断,其他诊断,入科日期,出科日期,住科天数,本次手术日期,本次手术名称,转出,出院,死亡,EN-avg,PN-avg,氨基酸(EN+PN)-avg,出科Z值,入科Z值'
+    # p_info = '{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n'
+    # daily_info = ',,,,,{0},{1},{2},,,,{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}\n'
+    daily_info = ',,,,,{},{},{},{},{},{},,{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n'
+    counter = 1
+    if new_file:
+        f.writerow(header.split(','))
+    for p in paients:
+        src_info = paients_info.find_one({'住院号': re.compile(p['_id'], re.IGNORECASE)})
+        print(p['_id'])
+        ignor_this, checkin_date, checkout_date = _is_ignor(src_info, p)
+        if ignor_this:
+            continue
+
+        nu_counter = 0
+        p['nu'].sort(key=lambda x: x['d'])
+        len_nu = len(p['nu'])
+        en_avg = 0
+        pn_avg = 0
+        protein_avg = 0
+        weight = 0
+        checkin_weight = 0
+        checkout_weight = 0
+        while nu_counter < len_nu: #write info day by day
+            v_en_dict={}
+            v_pn_dict={}
+            nu = p['nu'][nu_counter]
+            date_nu = nu['d']
+            if nu['en']:    #first
+                v_en_dict.update({nu['t']:nu['v']*nu['wt']})
+            else:
+                v_pn_dict.update({nu['t']:nu['v']*nu['wt']})
+
+            while (nu_counter < len_nu - 1) and p['nu'][nu_counter+1]['d'] == date_nu:    #the next with same date
+                next_nu = p['nu'][nu_counter+1]
+                if next_nu['en']:
+                    v_en_dict.update({next_nu['t']:next_nu['v']*next_nu['wt'] + v_en_dict.get(next_nu['t'],0)})
+                else:
+                    v_pn_dict.update({next_nu['t']:next_nu['v']*next_nu['wt']+v_pn_dict.get(next_nu['t'],0)})
+                nu_counter += 1
+            nu_counter += 1
+            if date_nu < checkin_date:
+                continue
+            if date_nu > checkout_date:
+                break
+            weight,en,pn,protein = _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f, checkin_date,False)
+            if weight==0:
+                break
+            if checkin_weight==0:
+                checkin_weight = weight
+            en_avg+=en/weight
+            pn_avg+=pn/weight
+            protein_avg+=protein/weight
+        if weight==0:
+            continue
+        checkout_weight = weight
+        total_days = _total_days(checkin_date,checkout_date)
+        en_avg=en_avg/total_days
+        pn_avg=pn_avg/total_days
+        protein_avg=protein_avg/total_days
+
+        born_date = src_info['出生日期'][:10]
+        if born_date == '':
+            checkin_z = '出生日期未知'
+            checkout_z = '出生日期未知'
+
+        else:
+            months_in = _total_months(born_date,checkin_date)
+            months_out = _total_months(born_date,checkout_date)
+            gender = 'M' if src_info['女']!=1 else 'F'
+            checkin_z = calculator.wfa(checkin_weight, months_in, gender)
+            checkout_z = calculator.wfa(checkout_weight, months_out, gender)
+        info= [counter,src_info['姓名'],'男' if src_info['女']!=1 else '女',src_info.get('年龄',src_info.get('入科年龄')),src_info['住院号'],born_date,src_info['胎龄'],src_info['出生体重'],src_info['Aparg评分'],src_info['既往手术次数'],src_info['既往手术名称'],src_info.get('入科诊断'),src_info['出科主要诊断'],src_info['其他诊断'],src_info['入科日期'][:10],src_info['出科日期'][:10],src_info.get('住科天数',src_info.get('住院天数')),src_info.get('本次手术日期','')[:10],src_info.get('本次手术名称', src_info.get('本次手术名称')),src_info.get('好转',src_info.get('转出')),src_info['出院'],src_info['死亡'],en_avg,pn_avg,protein_avg,checkin_z,checkout_z]
+        f.writerow(info)
+        if checkout_weight > 15:
+            logger.info('weightxx:  '+weight)
+        counter += 1
+
+def _is_ignor(src_info, p):
+    checkin_date = p['info'][7].split(' ')[0]
+    checkout_date = p['info'][8].split(' ')[0]
+    ignor_this = False    
+    if not src_info:
+        logger.error('cannot find info from source: ' + p['_id'])
+        ignor_this = True
+        return ignor_this, checkin_date, checkout_date
+    else:
+        checkin_date = src_info['入科日期'][:10]
+        checkout_date = src_info['出科日期'][:10]
+
+    if checkin_date=='' or checkout_date=='':
+        logger.error('checkin_date or checkin_date is null: '+checkin_date+'&'+checkout_date)
+        ignor_this = True
+        return ignor_this, checkin_date, checkout_date
+
+    if _total_days(checkin_date,checkout_date) <= 3:
+        logger.error('total days less than 3: ' + p['_id'])
+        ignor_this = True
+    return ignor_this, checkin_date, checkout_date
+
 def _groupBySt(paients):
     group = {}
     for p in paients:
@@ -92,9 +219,12 @@ def _raw2csv(file_name, paients):
     f.write(header)
     for p in paients:
         src_info = paients_info.find_one({'住院号': re.compile(p['_id'], re.IGNORECASE)})
-        if not src_info:
-            logger.error('cannot find info from source: ' + p['_id'])
-        info= p_info.format(counter,p['info'][2],p['_id'],p['info'][5],p['info'][7],'#'.join(p['info']))
+        ignor_this, checkin_date, checkout_date = _is_ignor(src_info, p)
+        if ignor_this:
+            continue
+            
+
+        info= p_info.format(counter,p['info'][2],p['_id'],p['info'][5],checkin_date,'#'.join(p['info']))
         f.write(info)
         nu_counter = 0
         p['nu'].sort(key=lambda x: x['d'])
@@ -117,47 +247,26 @@ def _raw2csv(file_name, paients):
                     v_pn_dict.update({next_nu['t']:next_nu['v']*next_nu['wt']+v_pn_dict.get(next_nu['t'],0)})
                 nu_counter += 1
             nu_counter += 1
-            if src_info:
-                if date_nu< src_info['入科日期'][:10]:
-                    continue
-                if date_nu > src_info['出科日期'][:10]:
-                    break
-            _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f)
+            if date_nu < checkin_date:
+                continue
+            if date_nu > checkout_date:
+                break
+            _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f, checkin_date)
 
         counter += 1
     f.close()
 
-def _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f):
+def _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f, checkin_date, write=True):
     wight = _get_wight(p, date_nu)
-    one_nu = daily_info.format(_total_days(p, date_nu), date_nu,wight,
-    v_en_dict.get(names.nkt,_0)*nu_per_ml[names.nkt]+
-    v_en_dict.get(names.ntt,_0)*nu_per_ml[names.ntt]+
-    v_en_dict.get(names.mrtn,_0)*nu_per_ml[names.mrtn]+
-    v_en_dict.get(names.aes,_0)*nu_per_ml[names.aes]+
-    v_en_dict.get(names.mr,_0)*nu_per_ml[names.mr]+
-    v_en_dict.get(names.yn,_0)*nu_per_ml[names.yn]+
-    v_en_dict.get(names.zn,_0)*nu_per_ml[names.zn]+
-    v_en_dict.get(names.pfn,_0)*nu_per_ml[names.pfn]+
-    v_en_dict.get(names.xbt,_0)*nu_per_ml[names.xbt]+
-    v_en_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+
-    v_en_dict.get(names.ajs,_0)*nu_per_ml[names.ajs],
-    v_pn_dict.get(names.zcl,_0)*nu_per_ml[names.zcl]+
-    v_pn_dict.get(names.yy,_0)*nu_per_ml[names.yy]+
-    v_pn_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+
-    v_pn_dict.get(names.ajs,_0)*nu_per_ml[names.ajs],
+    en = v_en_dict.get(names.nkt,_0)*nu_per_ml[names.nkt]+ v_en_dict.get(names.ntt,_0)*nu_per_ml[names.ntt]+ v_en_dict.get(names.mrtn,_0)*nu_per_ml[names.mrtn]+ v_en_dict.get(names.aes,_0)*nu_per_ml[names.aes]+ v_en_dict.get(names.mr,_0)*nu_per_ml[names.mr]+ v_en_dict.get(names.yn,_0)*nu_per_ml[names.yn]+ v_en_dict.get(names.zn,_0)*nu_per_ml[names.zn]+ v_en_dict.get(names.pfn,_0)*nu_per_ml[names.pfn]+ v_en_dict.get(names.xbt,_0)*nu_per_ml[names.xbt]+ v_en_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+ v_en_dict.get(names.ajs,_0)*nu_per_ml[names.ajs]
+    pn = v_pn_dict.get(names.zcl,_0)*nu_per_ml[names.zcl]+ v_pn_dict.get(names.yy,_0)*nu_per_ml[names.yy]+ v_pn_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+ v_pn_dict.get(names.ajs,_0)*nu_per_ml[names.ajs]
+    protein = v_en_dict.get(names.nkt,_0)*protein_per_ml[names.nkt]+ v_en_dict.get(names.ntt,_0)*protein_per_ml[names.ntt]+ v_en_dict.get(names.mrtn,_0)*protein_per_ml[names.mrtn]+ v_en_dict.get(names.aes,_0)*protein_per_ml[names.aes]+ v_en_dict.get(names.mr,_0)*protein_per_ml[names.mr]+ v_en_dict.get(names.yn,_0)*protein_per_ml[names.yn]+ v_en_dict.get(names.zn,_0)*protein_per_ml[names.zn]+ v_en_dict.get(names.pfn,_0)*protein_per_ml[names.pfn]+ v_en_dict.get(names.xbt,_0)*protein_per_ml[names.xbt]+ v_en_dict.get(names.ptt,_0)*protein_per_ml[names.ptt]+ v_en_dict.get(names.ajs,_0)*protein_per_ml[names.ajs]+ v_pn_dict.get(names.ajs,_0)
 
-    v_en_dict.get(names.nkt,_0)*protein_per_ml[names.nkt]+
-    v_en_dict.get(names.ntt,_0)*protein_per_ml[names.ntt]+
-    v_en_dict.get(names.mrtn,_0)*protein_per_ml[names.mrtn]+
-    v_en_dict.get(names.aes,_0)*protein_per_ml[names.aes]+
-    v_en_dict.get(names.mr,_0)*protein_per_ml[names.mr]+
-    v_en_dict.get(names.yn,_0)*protein_per_ml[names.yn]+
-    v_en_dict.get(names.zn,_0)*protein_per_ml[names.zn]+
-    v_en_dict.get(names.pfn,_0)*protein_per_ml[names.pfn]+
-    v_en_dict.get(names.xbt,_0)*protein_per_ml[names.xbt]+
-    v_en_dict.get(names.ptt,_0)*protein_per_ml[names.ptt]+
-    v_en_dict.get(names.ajs,_0)*protein_per_ml[names.ajs]+
-    v_pn_dict.get(names.ajs,_0),
+    one_nu = daily_info.format(_total_days(checkin_date, date_nu), date_nu,wight,
+    en,
+    pn,
+
+    protein,
 
     v_en_dict.get(names.nkt,_0),
     v_en_dict.get(names.ntt,_0),
@@ -175,18 +284,25 @@ def _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f):
     v_pn_dict.get(names.ptt,_0),
     v_pn_dict.get(names.ajs,_0)
     )
-    f.write(one_nu)
+    if write:
+        f.write(one_nu)
+    return wight,en,pn,protein
+
 def _get_wight(p, date_nu):
     wight = 0
     for w in p['wt']:
         if date_nu > w['st']:
             wight = w['w']
         else:
+            if wight==0:
+                wight = w['w']
             break
     return wight
 
-def _total_days(p, date_nu):
-    return (datetime.strptime(date_nu,'%Y-%m-%d')-datetime.strptime(p['info'][7].split(' ')[0],'%Y-%m-%d')).days
+def _total_days(start, end):
+    return (datetime.strptime(end,'%Y-%m-%d')-datetime.strptime(start,'%Y-%m-%d')).days+1
+def _total_months(start, end):
+    return ((datetime.strptime(end,'%Y-%m-%d')-datetime.strptime(start,'%Y-%m-%d')).days+1)/30
     
 
 if __name__ == '__main__':
