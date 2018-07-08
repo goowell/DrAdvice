@@ -1,8 +1,8 @@
 from db import paients_calculated,paients_merged,paients_info
 from logger import logger
 from datetime import datetime
-from setting import names, nu_per_ml,protein_per_ml
-from pygrowup import Calculator
+from setting import names, nu_per_ml,protein_per_ml, weight_dict
+from pygrowup import Calculator, helpers
 import re
 import csv
 import os
@@ -14,9 +14,9 @@ def main():
     'main entry'
     start = datetime.now()
     logger.info('hello..')
-    nu2csv() 
-    raw2csv()
-    summary2csv()
+    # nu2csv() 
+    # raw2csv()
+    # summary2csv()
     summary2csv(True)
     print('Elapsed time: ', datetime.now() - start)
 
@@ -29,7 +29,7 @@ def nu2csv():
         _nu2csv(k+'.csv',group[k])
 
 def _nu2csv(file_name, paients):
-    f = open(file_name,mode='w')
+    f = open(file_name,mode='w',encoding='gbk')
     header = '序号,姓名,住院号,入科年龄,入科日期,入科天数,日期,体重,EN,PN,其他\n'
     p_info = '{0},{1},{2},{3},{4},,,,,,{5}\n'
     daily_info = ',,,,,{0},{1},{2},{3},{4},\n'
@@ -58,8 +58,7 @@ def _nu2csv(file_name, paients):
                         pn_nu = next_nu['v']
                     nu_counter += 1
             nu_counter += 1
-            wight = _get_wight(p, date_nu)
-
+            wight = _get_weight(p, date_nu)
             one_nu = daily_info.format(_total_days(p, date_nu), date_nu,wight,en_nu,pn_nu)
             f.write(one_nu)
         counter += 1
@@ -75,7 +74,7 @@ def raw2csv():
 def summary2csv(one_file=False):
     paients = paients_merged.find().sort('_id')
     group = _groupBySt(paients)
-    if one_file:
+    if one_file and os.path.isfile('All_avg.csv'):
         os.remove('All_avg.csv')
 
     for k in group:
@@ -91,7 +90,7 @@ def _summary2csv(file_name, paients, one_file=False):
     new_file = not os.path.isfile(file_name)
 
     open_mode = 'a' if one_file else 'w'
-    ff=open(file_name,mode=open_mode, newline='')
+    ff=open(file_name,mode=open_mode, newline='',encoding='utf8')
     f = csv.writer(ff)
     header = '序号,姓名,性别,年龄,住院号,出生日期,胎龄,出生体重,Aparg评分,既往手术次数,既往手术名称,入科诊断,出科主要诊断,其他诊断,入科日期,出科日期,住科天数,本次手术日期,本次手术名称,转出,出院,死亡,EN-avg,PN-avg,氨基酸(EN+PN)-avg,出科Z值,入科Z值'
     # p_info = '{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n'
@@ -102,7 +101,7 @@ def _summary2csv(file_name, paients, one_file=False):
         f.writerow(header.split(','))
     for p in paients:
         src_info = paients_info.find_one({'住院号': re.compile(p['_id'], re.IGNORECASE)})
-        print(p['_id'])
+        # print(p['_id'])
         ignor_this, checkin_date, checkout_date = _is_ignor(src_info, p)
         if ignor_this:
             continue
@@ -164,8 +163,10 @@ def _summary2csv(file_name, paients, one_file=False):
             months_out = _total_months(born_date,checkout_date)
             gender = 'M' if src_info['女']!=1 else 'F'
             checkin_z = calculator.wfa(checkin_weight, months_in, gender)
+            logger.info(','.join([str(checkin_weight), str(months_in), gender,str(checkin_z)]))
             checkout_z = calculator.wfa(checkout_weight, months_out, gender)
-        info= [counter,src_info['姓名'],'男' if src_info['女']!=1 else '女',src_info.get('年龄',src_info.get('入科年龄')),src_info['住院号'],born_date,src_info['胎龄'],src_info['出生体重'],src_info['Aparg评分'],src_info['既往手术次数'],src_info['既往手术名称'],src_info.get('入科诊断'),src_info['出科主要诊断'],src_info['其他诊断'],src_info['入科日期'][:10],src_info['出科日期'][:10],src_info.get('住科天数',src_info.get('住院天数')),src_info.get('本次手术日期','')[:10],src_info.get('本次手术名称', src_info.get('本次手术名称')),src_info.get('好转',src_info.get('转出')),src_info['出院'],src_info['死亡'],en_avg,pn_avg,protein_avg,checkin_z,checkout_z]
+            logger.info(','.join([str(checkout_weight), str(months_out), gender,str(checkout_z)]))
+        info= [counter,src_info['姓名'],'男' if src_info['女']!=1 else '女',src_info.get('年龄',src_info.get('入科年龄')),src_info['住院号'],born_date,src_info['胎龄'],src_info['出生体重'],'\''+str(src_info['Aparg评分']),src_info['既往手术次数'],src_info['既往手术名称'],src_info.get('入科诊断'),src_info['出科主要诊断'],src_info['其他诊断'],src_info['入科日期'][:10],src_info['出科日期'][:10],src_info.get('住科天数',src_info.get('住院天数')),src_info.get('本次手术日期','')[:10],src_info.get('本次手术名称', src_info.get('本次手术名称')),src_info.get('好转',src_info.get('转出')),src_info['出院'],src_info['死亡'],en_avg,pn_avg,protein_avg,checkin_z,checkout_z]
         f.writerow(info)
         if checkout_weight > 15:
             logger.info('weightxx:  '+weight)
@@ -174,32 +175,38 @@ def _summary2csv(file_name, paients, one_file=False):
 def _is_ignor(src_info, p):
     checkin_date = p['info'][7].split(' ')[0]
     checkout_date = p['info'][8].split(' ')[0]
-    ignor_this = False    
-    if not src_info:
-        logger.error('cannot find info from source: ' + p['_id'])
-        ignor_this = True
-        return ignor_this, checkin_date, checkout_date
-    else:
-        checkin_date = src_info['入科日期'][:10]
-        checkout_date = src_info['出科日期'][:10]
+    ignor_this = False
+    try:
+        if not src_info:
+            logger.warn('cannot find info from source: ' + p['_id'])
+            ignor_this = True
+            return ignor_this, checkin_date, checkout_date
+        else:
+            checkin_date = src_info['入科日期'][:10]
+            checkout_date = src_info['出科日期'][:10]
 
-    if checkin_date=='' or checkout_date=='':
-        logger.error('checkin_date or checkin_date is null: '+checkin_date+'&'+checkout_date)
-        ignor_this = True
-        return ignor_this, checkin_date, checkout_date
+        if checkin_date=='' or checkout_date=='':
+            logger.error('checkin_date or checkin_date is null: '+checkin_date+'&'+checkout_date)
+            ignor_this = True
+            return ignor_this, checkin_date, checkout_date
 
-    if _total_days(checkin_date,checkout_date) <= 3:
-        logger.error('total days less than 3: ' + p['_id'])
-        ignor_this = True
+        if _total_days(checkin_date,checkout_date) <= 3:
+            logger.info('total days less than 3: ' + p['_id'])
+            ignor_this = True
+    except Exception as identifier:
+        logger.error(p['_id']+': '+str(identifier))
+        ignor_this = True  
+
     return ignor_this, checkin_date, checkout_date
 
 def _groupBySt(paients):
     group = {}
     for p in paients:
+        src_info = paients_info.find_one({'住院号': re.compile(p['_id'], re.IGNORECASE)})
         if len(p['info'])==13:
             p['info'].append(p['info'][2])
             p['info'].remove(p['info'][2])
-        d = p['info'][7][0:7]
+        d = src_info['入科日期'][0:7] if src_info else p['info'][7][0:7]
         if d=='':
             print(p['info'])
             continue
@@ -257,7 +264,7 @@ def _raw2csv(file_name, paients):
     f.close()
 
 def _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f, checkin_date, write=True):
-    wight = _get_wight(p, date_nu)
+    wight = _get_weight(p, date_nu)
     en = v_en_dict.get(names.nkt,_0)*nu_per_ml[names.nkt]+ v_en_dict.get(names.ntt,_0)*nu_per_ml[names.ntt]+ v_en_dict.get(names.mrtn,_0)*nu_per_ml[names.mrtn]+ v_en_dict.get(names.aes,_0)*nu_per_ml[names.aes]+ v_en_dict.get(names.mr,_0)*nu_per_ml[names.mr]+ v_en_dict.get(names.yn,_0)*nu_per_ml[names.yn]+ v_en_dict.get(names.zn,_0)*nu_per_ml[names.zn]+ v_en_dict.get(names.pfn,_0)*nu_per_ml[names.pfn]+ v_en_dict.get(names.xbt,_0)*nu_per_ml[names.xbt]+ v_en_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+ v_en_dict.get(names.ajs,_0)*nu_per_ml[names.ajs]
     pn = v_pn_dict.get(names.zcl,_0)*nu_per_ml[names.zcl]+ v_pn_dict.get(names.yy,_0)*nu_per_ml[names.yy]+ v_pn_dict.get(names.ptt,_0)*nu_per_ml[names.ptt]+ v_pn_dict.get(names.ajs,_0)*nu_per_ml[names.ajs]
     protein = v_en_dict.get(names.nkt,_0)*protein_per_ml[names.nkt]+ v_en_dict.get(names.ntt,_0)*protein_per_ml[names.ntt]+ v_en_dict.get(names.mrtn,_0)*protein_per_ml[names.mrtn]+ v_en_dict.get(names.aes,_0)*protein_per_ml[names.aes]+ v_en_dict.get(names.mr,_0)*protein_per_ml[names.mr]+ v_en_dict.get(names.yn,_0)*protein_per_ml[names.yn]+ v_en_dict.get(names.zn,_0)*protein_per_ml[names.zn]+ v_en_dict.get(names.pfn,_0)*protein_per_ml[names.pfn]+ v_en_dict.get(names.xbt,_0)*protein_per_ml[names.xbt]+ v_en_dict.get(names.ptt,_0)*protein_per_ml[names.ptt]+ v_en_dict.get(names.ajs,_0)*protein_per_ml[names.ajs]+ v_pn_dict.get(names.ajs,_0)
@@ -288,21 +295,24 @@ def _write_one_record(p, date_nu, daily_info, v_en_dict, v_pn_dict, f, checkin_d
         f.write(one_nu)
     return wight,en,pn,protein
 
-def _get_wight(p, date_nu):
-    wight = 0
+def _get_weight(p, date_nu):
+
+    weight = 0
     for w in p['wt']:
         if date_nu > w['st']:
-            wight = w['w']
+            weight = w['w']
         else:
-            if wight==0:
-                wight = w['w']
+            if weight==0:
+                weight = w['w']
             break
-    return wight
+    if weight==0:
+        weight = weight_dict.get(p['_id'].upper(),0)
+    return weight
 
 def _total_days(start, end):
     return (datetime.strptime(end,'%Y-%m-%d')-datetime.strptime(start,'%Y-%m-%d')).days+1
 def _total_months(start, end):
-    return ((datetime.strptime(end,'%Y-%m-%d')-datetime.strptime(start,'%Y-%m-%d')).days+1)/30
+    return ((datetime.strptime(end,'%Y-%m-%d')-datetime.strptime(start,'%Y-%m-%d')).days+1)/30.4375
     
 
 if __name__ == '__main__':

@@ -167,12 +167,12 @@ def _split_excel_pn(excel_pn):
             "v" : e_pn[r"6%AA"],
             "d" : e_pn[r"date"],
             "en" : False,
-            "wt" : 1
+            "wt" : 0.06
         })
         if e_pn[r"脂肪乳"]>0:
             pn.append({
             "t" : names.yy,
-            "v" : e_pn[r"脂肪乳"],
+            "v" : e_pn[r"脂肪乳"]*0.1,
             "d" : e_pn[r"date"],
             "en" : False,
             "wt" : 1
@@ -181,7 +181,7 @@ def _split_excel_pn(excel_pn):
 def combine_splited_and_excel():
     paients_splited_with_excel.remove()
     for one_nu in paients_splited.find():
-        items = paients_splited.find({'sn':one_nu.get('_id')})
+        items = paients_pn.find({'sn':one_nu.get('_id')})
         for item in items:
             one_nu['nu'].extend(_split_excel_pn(item['pn']))
         paients_splited_with_excel.insert_one(one_nu)
@@ -197,7 +197,7 @@ def main():
     # for t in test_case:
     #     print(split_ad(t))
     # print()
-    split()
+    # split()
     combine_splited_and_excel()
     merge()
     # cal_en()

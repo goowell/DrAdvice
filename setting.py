@@ -1,5 +1,5 @@
-db_ip = '192.168.8.112'
-db_ip = '10.10.2.110'
+db_ip = '192.168.2.109'
+# db_ip = '10.10.2.110'
 # db_ip = '10.10.111.22'
 
 class names(object):
@@ -22,8 +22,8 @@ class names(object):
 
 
 nu_per_ml = {
-    names.ptt   :4,
-    names.xbt   :1,
+    names.ptt   :4,     #100%葡萄糖/ml
+    names.xbt   :1,     #/ml
     names.pfn   :0.67,
     names.zn    :0.81,
     names.yn    :0.67,
@@ -32,9 +32,9 @@ nu_per_ml = {
     names.mrtn  :0.66,
     names.nkt   :0.71,
     names.ntt   :0.71,
-    names.ajs   :4,
-    names.zcl   :2,
-    names.yy    :10    
+    names.ajs   :4,     #100%AA/ml
+    names.zcl   :2,     #/ml
+    names.yy    :1      #/ml
 }
 protein_per_ml = {
     names.ptt   :0,
@@ -47,7 +47,23 @@ protein_per_ml = {
     names.mrtn  :0.014,
     names.nkt   :0.0195,
     names.ntt   :0.0193,
-    names.ajs   :1,    
+    names.ajs   :1,         #100%AA/ml    
     names.zcl   :0,
     names.yy    :0    
+}
+weight_dict = {
+    'D64385': 5,
+    'C28069': 6,
+    'C31838': 5.5,
+    'D56128': 4,
+    'C06324': 8,
+    'C24275': 3.8,
+    'B64954': 6.5,
+    'B78836': 4.4,
+    'B79668': 3.6,
+    'C61762': 6.8,
+    'B30827': 2.7,
+    'D37175': 2.5,
+    'E09679': 5.8,
+    'B74640': 6.9
 }
